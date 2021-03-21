@@ -1,0 +1,36 @@
+{
+  "name": "bnb-currency-exchange-rates",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "ts-node .",
+    "inspect": "node --inspect-brk -r ts-node/register .",
+    "build": "tsc",
+    "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix"
+  },
+  "author": "Lubomir Georgiev",
+  "license": "ISC",
+  "devDependencies": {
+    "@tsconfig/node14": "^1.0.0",
+    "@types/cheerio": "^0.22.28",
+    "@types/faker": "^5.1.7",
+    "@types/node": "^14.14.35",
+    "@typescript-eslint/eslint-plugin": "^4.18.0",
+    "@typescript-eslint/parser": "^4.18.0",
+    "eslint": "^7.22.0",
+    "terser": "^5.6.1",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.3"
+  },
+  "dependencies": {
+    "@types/json2csv": "^5.0.1",
+    "axios": "^0.21.1",
+    "cheerio": "^1.0.0-rc.5",
+    "date-fns": "^2.19.0",
+    "faker": "^5.4.0",
+    "isnumeric": "^0.3.3",
+    "json2csv": "^5.0.6"
+  }
+}
