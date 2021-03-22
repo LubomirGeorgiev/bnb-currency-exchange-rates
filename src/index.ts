@@ -12,11 +12,15 @@ import {
 
 import isNumeric from 'isnumeric'
 
-import { createWriteStream } from 'fs'
+import { createWriteStream, existsSync, mkdir as mkd } from 'fs'
+
+import { promisify } from 'util'
 
 import cheerio from 'cheerio'
 
 import { AsyncParser } from 'json2csv'
+
+const mkdir = promisify(mkd)
 
 let numberOfRequests = 0;
 console.time('Execution Time')
@@ -63,6 +67,12 @@ export const commonParams = {
 
   const csvFiles = {}
 
+  if (!existsSync(process.env.DATA_DIR!)) {
+    await mkdir(process.env.DATA_DIR!, {
+      recursive: true
+    })
+  }
+
   // Get all available currencies
   $('select#valutes > option').toArray().map(($currencyOption) => {
     const currencyISOCode = $($currencyOption).text().trim()
@@ -70,7 +80,7 @@ export const commonParams = {
     if (currencyISOCode.length === 3) {
       csvFiles[currencyISOCode] = new AsyncParser({
         fields: Object.values(fields)
-      }).toOutput(createWriteStream(`data/${currencyISOCode}.csv`, { encoding: 'utf8' }))
+      }).toOutput(createWriteStream(`${process.env.DATA_DIR}/${currencyISOCode}.csv`, { encoding: 'utf8' }))
 
       commonParamObject.append('valutes', currencyISOCode)
     }
