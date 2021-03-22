@@ -94,7 +94,7 @@ export const commonParams = {
   const stepInDays = 90;
 
   for (
-    let cursor = new Date(currentTime), requestIndex = 0;
+    let cursor = currentTime, requestIndex = 0;
     isAfter(cursor, endPeriod);
     cursor = subDays(cursor, stepInDays), requestIndex++
   ) {
@@ -134,7 +134,7 @@ export const commonParams = {
 
         csvFiles[code].input.push(JSON.stringify({
           [fields.date]: new Date($ParsedXML($row).find('S2_CURR_DATE').text().trim()).toISOString(),
-          [fields.rate]: $ParsedXML($row).find('RATE').text().trim(),
+          [fields.rate]: rate,
           [fields.reverseRate]: reverseRate === 'n/a' ? '' : reverseRate,
           [fields.isoCode]: code
         }))

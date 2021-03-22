@@ -29,7 +29,7 @@ const exec = promisify(exe);
   }
 
   const buildURL = (currency: string) =>
-    `https://media.githubusercontent.com/media/LubomirGeorgiev/bnb-currency-exchange-rates/main/data/${currency}.csv`
+    `https://raw.githubusercontent.com/LubomirGeorgiev/bnb-currency-exchange-rates/main/data/${currency}.csv`
 
   let markdown = `
   Last Update: ${format(new Date(), 'PPppp')} (${new Date().toISOString()})\n
