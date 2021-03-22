@@ -29,6 +29,7 @@
     "axios": "^0.21.1",
     "cheerio": "^1.0.0-rc.5",
     "date-fns": "^2.19.0",
+    "dotenv-defaults": "^2.0.1",
     "faker": "^5.4.0",
     "isnumeric": "^0.3.3",
     "json2csv": "^5.0.6"

@@ -7,8 +7,6 @@ export const commonParams = {
   showChartButton: 'true'
 }
 
-export const endPeriod = new Date('2020-01-01T10:00:00.000Z')
-
 export const currencyCodes = [
   'AUD',
   'ATS',

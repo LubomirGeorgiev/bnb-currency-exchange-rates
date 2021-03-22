@@ -1,3 +1,5 @@
+import 'dotenv-defaults/config'
+
 import Axios from 'axios'
 import { URLSearchParams } from 'url'
 import faker from 'faker'
@@ -5,6 +7,7 @@ import {
   format,
   subDays,
   isAfter,
+  isValid as isValiDate
 } from 'date-fns'
 
 import isNumeric from 'isnumeric'
@@ -16,8 +19,7 @@ import cheerio from 'cheerio'
 import { AsyncParser } from 'json2csv'
 
 import {
-  commonParams,
-  endPeriod
+  commonParams
 } from './constants'
 
 let numberOfRequests = 0;
@@ -36,6 +38,12 @@ BulgarianNationalBank.interceptors.request.use(request => {
   numberOfRequests++;
   return request
 });
+
+const endPeriod = new Date(process.env.END_DATE!);
+
+if (!isValiDate(endPeriod)) {
+  throw new Error('The env variable "END_DATE" must be a valid date')
+}
 
 (async () => {
   const commonParamObject = new URLSearchParams()

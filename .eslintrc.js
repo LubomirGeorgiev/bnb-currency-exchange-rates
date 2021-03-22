@@ -9,6 +9,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended' // Uses the recommended rules from the @typescript-eslint/eslint-plugin
   ],
   rules: {
+    '@typescript-eslint/no-non-null-assertion': 'off',
     'quotes': ['error', 'single'],
     'indent': ['error', 2],
     'array-element-newline': ['error',
