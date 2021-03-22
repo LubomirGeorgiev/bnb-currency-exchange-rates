@@ -37,11 +37,20 @@ const exec = promisify(exe);
   |-|-|-|
   `.trim()
 
-  for (const file of listOfCsvFiles) {
-    const currencyISOCode = file.replace('.csv', '')
-    const numberOfLines = await fileLineCount(`${dataDir}/${file}`)
+  let csvMap = new Map()
 
-    markdown = markdown + `\n| ${currencyISOCode} | ${buildURL(currencyISOCode)} | ${numberOfLines} |`
+  for (const file of listOfCsvFiles) {
+    const numberOfLines = await fileLineCount(`${dataDir}/${file}`)
+    csvMap.set(file, numberOfLines)
+  }
+
+  csvMap = new Map([...csvMap.entries()].sort((a, b) => b[1] - a[1]))
+
+
+  for (const [fileName, lines] of csvMap.entries()) {
+    const currencyISOCode = fileName.replace('.csv', '')
+
+    markdown = markdown + `\n| ${currencyISOCode} | ${buildURL(currencyISOCode)} | ${lines} |`
   }
 
   const editedReadme = readmeFileAsText.replace(/(<\!--.*?-->)([\s\S]*?)(<\!--.*?-->)/gmi, `$1\n${markdown}\n$3`)
