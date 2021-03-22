@@ -1,10 +1,14 @@
 # Official exchange rates of the Bulgarian National Bank
 
+All exchange rates in the dataset are based on **Bulgarian Lev/BGN/Български лев** and are set as official rates by the [**Bulgarian National Bank**](https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies/index.htm).
+
+This repository utilizes the [**schedule**](https://docs.github.com/en/actions/reference/events-that-trigger-workflows) function of Github Actions in order to update the dataset on a continuously running cronjob.
+
 # Available datasets
 
-<!-- START LINKS -->
+<!-- START LINKS (DO NOT FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
 
-Last Update: Mar 22, 2021, 8:25:28 PM GMT+2 (2021-03-22T18:25:28.539Z)
+Last Update: Mar 22, 2021, 8:36:30 PM GMT+2 (2021-03-22T18:36:30.060Z)
 
 | Currency | URL                                                                                             | Number of records |
 | -------- | ----------------------------------------------------------------------------------------------- | ----------------- |
@@ -68,4 +72,4 @@ Last Update: Mar 22, 2021, 8:25:28 PM GMT+2 (2021-03-22T18:25:28.539Z)
 | XPT      | https://raw.githubusercontent.com/LubomirGeorgiev/bnb-currency-exchange-rates/main/data/XPT.csv | 0                 |
 | YUG      | https://raw.githubusercontent.com/LubomirGeorgiev/bnb-currency-exchange-rates/main/data/YUG.csv | 0                 |
 
-<!-- END LINKS -->
+<!-- START LINKS (DO NOT FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
