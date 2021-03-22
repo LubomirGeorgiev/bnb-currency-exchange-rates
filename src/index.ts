@@ -18,10 +18,6 @@ import cheerio from 'cheerio'
 
 import { AsyncParser } from 'json2csv'
 
-import {
-  commonParams
-} from './constants'
-
 let numberOfRequests = 0;
 console.time('Execution Time')
 
@@ -45,26 +41,47 @@ if (!isValiDate(endPeriod)) {
   throw new Error('The env variable "END_DATE" must be a valid date')
 }
 
+export const commonParams = {
+  type: 'XML',
+  downloadOper: 'true',
+  group1: 'second',
+  search: 'true',
+  showChart: 'false',
+  showChartButton: 'true'
+};
+
 (async () => {
+  const fields = {
+    date: 'date',
+    rate: 'rate',
+    reverseRate: 'reverseRate',
+    isoCode: 'isoCode'
+  }
+
   const commonParamObject = new URLSearchParams()
-  commonParamObject.append('valutes', 'USD')
+  const $ = cheerio.load((await BulgarianNationalBank.get('?search=true')).data)
+
+  const csvFiles = {}
+
+  // Get all available currencies
+  $('select#valutes > option').toArray().map(($currencyOption) => {
+    const currencyISOCode = $($currencyOption).text().trim()
+
+    if (currencyISOCode.length === 3) {
+      csvFiles[currencyISOCode] = new AsyncParser({
+        fields: Object.values(fields)
+      }).toOutput(createWriteStream(`data/${currencyISOCode}.csv`, { encoding: 'utf8' }))
+
+      commonParamObject.append('valutes', currencyISOCode)
+    }
+  })
 
   for (const [paramKey, paramValue] of Object.entries(commonParams)) {
     commonParamObject.append(paramKey, paramValue)
   }
 
-  const fields = {
-    date: 'date',
-    rate: 'rate',
-    reverseRate: 'reverseRate',
-  }
-
   const currentTime = new Date();
   const stepInDays = 90;
-  const fileOutputStream = createWriteStream('data/USD.csv', { encoding: 'utf8' })
-  const csv = new AsyncParser({
-    fields: Object.values(fields)
-  }).toOutput(fileOutputStream)
 
   for (
     let cursor = new Date(currentTime), requestIndex = 0;
@@ -88,18 +105,13 @@ if (!isValiDate(endPeriod)) {
     periodParams.append('periodEndMonths', format(new Date(periodEnd), 'L'));
     periodParams.append('periodEndYear', format(new Date(periodEnd), 'Y'))
 
-    const finalParams = new URLSearchParams({
-      ...Object.fromEntries(periodParams),
-      ...Object.fromEntries(commonParamObject)
-    })
-
-    const test = await BulgarianNationalBank.get(`index.htm?${finalParams.toString()}`, {
+    const XMLResponse = await BulgarianNationalBank.get(`index.htm?${periodParams.toString()}&${commonParamObject.toString()}`, {
       headers: {
         'user-agent': faker.internet.userAgent()
       }
     })
 
-    const $ParsedXML = cheerio.load(test?.data, {
+    const $ParsedXML = cheerio.load(XMLResponse?.data, {
       xmlMode: true
     })
 
@@ -107,13 +119,16 @@ if (!isValiDate(endPeriod)) {
       const rate = $ParsedXML($row).find('RATE').text()
 
       if (isNumeric(rate)) {
-        csv.input.push(JSON.stringify({
+        const code = $ParsedXML($row).find('CODE').text().trim()
+        const reverseRate = $ParsedXML($row).find('REVERSERATE').text().trim()
+
+        csvFiles[code].input.push(JSON.stringify({
           [fields.date]: new Date($ParsedXML($row).find('S2_CURR_DATE').text().trim()).toISOString(),
           [fields.rate]: $ParsedXML($row).find('RATE').text().trim(),
-          [fields.reverseRate]: $ParsedXML($row).find('REVERSERATE').text().trim()
+          [fields.reverseRate]: reverseRate === 'n/a' ? '' : reverseRate,
+          [fields.isoCode]: code
         }))
       }
-
     })
 
   }

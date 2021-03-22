@@ -1,3 +1,3 @@
 declare module 'isnumeric' {
-  export default (obj: string | obj): boolean
-};
+  export default function isnumeric(obj: string | ibj): boolean;
+}
