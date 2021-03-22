@@ -1,0 +1,34 @@
+name: "Bulgarian National Bank - Official Currency Exchange Rates"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 18 * * *"
+
+jobs:
+  update:
+    name: Update Data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install deps
+        run: |
+          npm install
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Run
+        run: |
+          npm start
+      - uses: EndBug/add-and-commit@v7
+        with:
+          add: '.'
+          message: 'Update exchange rates'
+          author_name: "BNB Currency update BOT"
+          author_email: bnb-currency-bot@delinx.digital
