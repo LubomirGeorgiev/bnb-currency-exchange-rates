@@ -1,0 +1,20 @@
+
+---------- Result ------------
+
+            Physical :  252
+              Source :  195
+             Comment :  4
+ Single-line comment :  4
+       Block comment :  0
+               Mixed :  2
+ Empty block comment :  0
+               Empty :  55
+               To Do :  0
+
+Number of files read :  3
+
+----------------------------
+
+4909	./src/index.ts
+2307	./src/updateReadme.ts
+65	./src/types.ts
