@@ -12,6 +12,7 @@ module.exports = {
     '@typescript-eslint/no-non-null-assertion': 'off',
     'quotes': ['error', 'single'],
     'indent': ['error', 2],
+    'semi': ['error', 'never'],
     'array-element-newline': ['error',
       {
         'multiline': true,

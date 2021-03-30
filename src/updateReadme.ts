@@ -3,7 +3,8 @@ import 'dotenv-defaults/config'
 import {
   readFile as rf,
   writeFile as wf,
-  readdir as rd
+  readdir as rd,
+  unlink as unl
 } from 'fs'
 import { exec as exe } from 'child_process'
 import { promisify } from 'util'
@@ -11,21 +12,27 @@ import { join } from 'path'
 import prettier from 'prettier'
 import { format } from 'date-fns'
 
-const readFile = promisify(rf);
-const writeFile = promisify(wf);
-const readDir = promisify(rd);
-const exec = promisify(exe);
+const readFile = promisify(rf)
+const writeFile = promisify(wf)
+const readDir = promisify(rd)
+const exec = promisify(exe)
+const unlink = promisify(unl);
 
 (async () => {
 
   const dataDir = join(__dirname, `../${process.env.DATA_DIR}`)
   const readmeFilePath = join(__dirname, '../README.md')
-  const readmeFileAsText = await readFile(readmeFilePath, 'utf8');
+  const readmeFileAsText = await readFile(readmeFilePath, 'utf8')
   const listOfCsvFiles = await readDir(dataDir)
 
-  const fileLineCount = async (fileLocation) => {
-    const { stdout } = await exec(`cat ${fileLocation} | wc -l`);
-    return parseInt(stdout);
+  const csvStats = async (fileLocation) => {
+    const { stdout: numOfLines } = await exec(`cat ${fileLocation} | wc -l`)
+    const { stdout: numberOfMissingDays } = await exec(`cat ${fileLocation} | grep -i '",1' | wc -l`)
+
+    return {
+      numOfLines: parseInt(numOfLines),
+      numberOfMissingDays: parseInt(numberOfMissingDays)
+    }
   }
 
   const buildURL = (currency: string) =>
@@ -33,24 +40,30 @@ const exec = promisify(exe);
 
   let markdown = `
   Last Update: ${format(new Date(), 'PPppp')} (${new Date().toISOString()})\n
-  | Currency | URL | Number of records |
-  |-|-|-|
+  | Currency | URL | Number of records | Number of missing days that were filled in |
+  |:-:|-|:-:|:-:|
   `.trim()
 
   let csvMap = new Map()
 
   for (const file of listOfCsvFiles) {
-    const numberOfLines = await fileLineCount(`${dataDir}/${file}`)
-    csvMap.set(file, numberOfLines)
+    const filePath = `${dataDir}/${file}`
+    const fileStats = await csvStats(filePath)
+    csvMap.set(file, fileStats)
   }
 
-  csvMap = new Map([...csvMap.entries()].sort((a, b) => b[1] - a[1]))
+  csvMap = new Map([...csvMap.entries()].sort((a, b) => b?.[1]?.numOfLines - a?.[1]?.numOfLines))
 
 
-  for (const [fileName, lines] of csvMap.entries()) {
+  for (const [fileName, { numOfLines, numberOfMissingDays }] of csvMap.entries()) {
     const currencyISOCode = fileName.replace('.csv', '')
+    const filePath = `${dataDir}/${fileName}`
 
-    markdown = markdown + `\n| ${currencyISOCode} | ${buildURL(currencyISOCode)} | ${lines} |`
+    if (numOfLines < 2) {
+      await unlink(filePath)
+    } else {
+      markdown = markdown + `\n| ${currencyISOCode} | ${buildURL(currencyISOCode)} | ${numOfLines} | ${numberOfMissingDays} |`
+    }
   }
 
   const editedReadme = readmeFileAsText.replace(/(<\!--.*?-->)([\s\S]*?)(<\!--.*?-->)/gmi, `$1\n${markdown}\n$3`)
