@@ -10,7 +10,7 @@ This repository utilizes the [**schedule**](https://docs.github.com/en/actions/r
 
 <!-- START LINKS (DO NOT EVER FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
 
-Last Update: Apr 6, 2021, 5:42:42 PM GMT+0 (2021-04-06T17:42:42.526Z)
+Last Update: Apr 9, 2021, 5:23:25 PM GMT+0 (2021-04-09T17:23:25.643Z)
 
 | Currency | URL | Number of records | Number of missing days that were filled in |
 | :------: | --- | :---------------: | :----------------------------------------: |
