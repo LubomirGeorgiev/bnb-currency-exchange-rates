@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node .",
+    "start": "node --unhandled-rejections=strict -r ts-node/register .",
     "inspect": "node --inspect-brk -r ts-node/register .",
     "build": "tsc",
     "update-readme": "ts-node src/updateReadme.ts",
