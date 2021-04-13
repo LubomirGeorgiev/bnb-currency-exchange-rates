@@ -38,6 +38,7 @@
     "dotenv-defaults": "^2.0.1",
     "faker": "^5.4.0",
     "isnumeric": "^0.3.3",
-    "json2csv": "^5.0.6"
+    "json2csv": "^5.0.6",
+    "public-ip": "^4.0.3"
   }
 }

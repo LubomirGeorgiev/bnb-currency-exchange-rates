@@ -12,16 +12,13 @@ import {
   isValid as isValiDate,
   differenceInDays
 } from 'date-fns'
-
 import isNumeric from 'isnumeric'
+import cheerio from 'cheerio'
+import { AsyncParser } from 'json2csv'
 
 import { createWriteStream, existsSync, mkdir as mkd } from 'fs'
-
+import publicIP from 'public-ip'
 import { promisify } from 'util'
-
-import cheerio from 'cheerio'
-
-import { AsyncParser } from 'json2csv'
 
 import { PrevDates } from './types'
 
@@ -60,6 +57,8 @@ export const commonParams = {
 };
 
 (async () => {
+  console.log(`Current IP Address is: ${await publicIP.v4()}\n`)
+
   const columns = {
     date: 'date',
     rate: 'rate',
@@ -109,10 +108,7 @@ export const commonParams = {
       subDays(cursor, stepInDays), endDate
     ])
 
-    console.log({
-      periodEnd,
-      periodStart
-    })
+    console.log(`Request: ${numberOfRequests}\nPeriod End: ${periodEnd?.toISOString()}\nPeriod Start: ${periodStart?.toISOString()}\n`)
 
     const periodParams = new URLSearchParams()
 
