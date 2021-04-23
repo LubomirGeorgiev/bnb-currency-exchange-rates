@@ -4,7 +4,6 @@ import Axios from 'axios'
 import { URLSearchParams } from 'url'
 import faker from 'faker'
 import {
-  format as formatDate,
   max as maxDate,
   subDays,
   addDays,
@@ -21,6 +20,7 @@ import publicIP from 'public-ip'
 import { promisify } from 'util'
 
 import { PrevDates } from './types'
+import intlFormat from 'date-fns/intlFormat'
 
 const mkdir = promisify(mkd)
 
@@ -98,6 +98,8 @@ export const commonParams = {
   const currentTime = new Date()
   const stepInDays = 240
 
+  const timeZone = 'Europe/Sofia'
+
   for (
     let cursor = currentTime, requestIndex = 0;
     isAfterDate(cursor, endDate);
@@ -112,12 +114,13 @@ export const commonParams = {
 
     const periodParams = new URLSearchParams()
 
-    periodParams.append('periodStartDays', formatDate(new Date(periodStart), 'd'))
-    periodParams.append('periodStartMonths', formatDate(new Date(periodStart), 'L'))
-    periodParams.append('periodStartYear', formatDate(new Date(periodStart), 'Y'))
-    periodParams.append('periodEndDays', formatDate(new Date(periodEnd), 'd'))
-    periodParams.append('periodEndMonths', formatDate(new Date(periodEnd), 'L'))
-    periodParams.append('periodEndYear', formatDate(new Date(periodEnd), 'Y'))
+
+    periodParams.append('periodStartDays', intlFormat(periodStart, { timeZone, day: 'numeric' }))
+    periodParams.append('periodStartMonths', intlFormat(periodStart, { timeZone, month: 'numeric' }))
+    periodParams.append('periodStartYear', intlFormat(periodStart, { timeZone, year: 'numeric' }))
+    periodParams.append('periodEndDays', intlFormat(periodEnd, { timeZone, day: 'numeric' }))
+    periodParams.append('periodEndMonths', intlFormat(periodEnd, { timeZone, month: 'numeric' }))
+    periodParams.append('periodEndYear', intlFormat(periodEnd, { timeZone, year: 'numeric' }))
 
     const XMLResponse = await BulgarianNationalBank.get(`index.htm?${periodParams.toString()}&${commonParamObject.toString()}`, {
       headers: {
