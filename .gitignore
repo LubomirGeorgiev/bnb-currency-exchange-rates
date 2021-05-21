@@ -117,3 +117,5 @@ dist
 
 build
 yarn.lock
+
+*.db
