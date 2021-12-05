@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import 'dotenv-defaults/config'
 
 import Axios from 'axios'
@@ -15,17 +16,16 @@ import isNumeric from 'isnumeric'
 import cheerio from 'cheerio'
 import { AsyncParser } from 'json2csv'
 
-import { createWriteStream, existsSync, mkdir as mkd } from 'fs'
+import { createWriteStream, existsSync } from 'fs'
+import { mkdir } from 'fs/promises'
 import publicIP from 'public-ip'
-import { promisify } from 'util'
 
 import { PrevDates } from './types'
 import intlFormat from 'date-fns/intlFormat'
 
-const mkdir = promisify(mkd)
-
 let numberOfRequests = 0
-console.time('Execution Time')
+console.time('Execution Time');
+
 
 process.on('exit', () => {
   console.timeEnd('Execution Time')
