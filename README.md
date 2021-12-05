@@ -58,3 +58,8 @@ Last Update: Sep 16, 2021, 5:17:44 PM GMT+0 (2021-09-16T17:17:44.646Z)
 |   GRD    | https://raw.githubusercontent.com/LubomirGeorgiev/bnb-currency-exchange-rates/main/data/GRD.csv |        358        |                    106                     |
 
 <!-- END LINKS (DO NOT EVER FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
+
+# How to generate DB migrations
+```
+npm run typeorm migration:generate -- -n migrationNameHere
+```

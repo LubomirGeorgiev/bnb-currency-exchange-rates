@@ -33,20 +33,10 @@ process.on('exit', () => {
   console.log(`Number of requests: ${numberOfRequests}`)
 })
 
-export const connection = createConnection({
-  type: "sqlite",
-  name: "sqlite",
-  database: "data.db",
-  entities: [__dirname + "/entity/*{.js,.ts}"],
-  migrationsRun: true,
-  logging: true
-})
+export const connection = createConnection()
 
+global.typeormConnection = connection
 
-connection.then(connection => {
-  console.log('==sqlite', connection)
-  // here you can start to work with your entities
-}).catch(error => console.log(error));
 
 const BulgarianNationalBank = Axios.create({
   baseURL: 'https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies'
