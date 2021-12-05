@@ -1,22 +1,18 @@
 import 'dotenv-defaults/config'
 
-import {
-  readFile as rf,
-  writeFile as wf,
-  readdir as rd,
-  unlink as unl
-} from 'fs'
 import { exec as exe } from 'child_process'
 import { promisify } from 'util'
 import { join } from 'path'
 import prettier from 'prettier'
 import { format } from 'date-fns'
+import {
+  readFile,
+  writeFile,
+  readdir as readDir,
+  unlink
+} from 'fs/promises'
 
-const readFile = promisify(rf)
-const writeFile = promisify(wf)
-const readDir = promisify(rd)
-const exec = promisify(exe)
-const unlink = promisify(unl);
+const exec = promisify(exe);
 
 (async () => {
 

@@ -38,7 +38,10 @@
     "faker": "^5.5.3",
     "isnumeric": "^0.3.3",
     "json2csv": "^5.0.6",
+    "nanoid": "^3.1.30",
     "public-ip": "^4.0.4",
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.1.13",
+    "sqlite3": "^5.0.2",
+    "typeorm": "^0.2.41"
   }
 }
