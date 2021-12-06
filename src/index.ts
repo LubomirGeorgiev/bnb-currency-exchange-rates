@@ -108,35 +108,31 @@ BulgarianNationalBank.interceptors.request.use(request => {
 
     console.log(`${JSON.stringify({ request: numberOfRequests, periodStart, periodEnd })}`)
 
-    const periodParams = new URLSearchParams()
+    const periodQueryParams = new URLSearchParams()
 
-    periodParams.append('periodStartDays', intlFormat(periodStart, { timeZone, day: 'numeric' }))
-    periodParams.append('periodStartMonths', intlFormat(periodStart, { timeZone, month: 'numeric' }))
-    periodParams.append('periodStartYear', intlFormat(periodStart, { timeZone, year: 'numeric' }))
-    periodParams.append('periodEndDays', intlFormat(periodEnd, { timeZone, day: 'numeric' }))
-    periodParams.append('periodEndMonths', intlFormat(periodEnd, { timeZone, month: 'numeric' }))
-    periodParams.append('periodEndYear', intlFormat(periodEnd, { timeZone, year: 'numeric' }))
+    periodQueryParams.append('periodStartDays', intlFormat(periodStart, { timeZone, day: 'numeric' }))
+    periodQueryParams.append('periodStartMonths', intlFormat(periodStart, { timeZone, month: 'numeric' }))
+    periodQueryParams.append('periodStartYear', intlFormat(periodStart, { timeZone, year: 'numeric' }))
+    periodQueryParams.append('periodEndDays', intlFormat(periodEnd, { timeZone, day: 'numeric' }))
+    periodQueryParams.append('periodEndMonths', intlFormat(periodEnd, { timeZone, month: 'numeric' }))
+    periodQueryParams.append('periodEndYear', intlFormat(periodEnd, { timeZone, year: 'numeric' }))
 
-    const XMLResponse = await BulgarianNationalBank.get(`index.htm?${periodParams.toString()}&${queryParams.toString()}`, {
+    const XMLResponse = await BulgarianNationalBank.get(`index.htm?${periodQueryParams.toString()}&${queryParams.toString()}`, {
       headers: {
         'user-agent': userAgent
       }
     })
 
-    const $ParsedXML = cheerio.load(XMLResponse?.data, { xmlMode: true })
-
-    const previousDates: PrevDates = {}
+    const $XML = cheerio.load(XMLResponse?.data, { xmlMode: true })
 
     const rates: ExchangeRate[] = []
 
-    $ParsedXML('ROW').toArray().reverse().map(($row, index) => {
-      const rate = parseFloat($ParsedXML($row).find('RATE').text())
+    $XML('ROW').toArray().reverse().map(($row) => {
+      const rate = parseFloat($XML($row).find('RATE').text())
 
       if (isNumber(rate)) {
-        const isoCode = $ParsedXML($row).find('CODE').text().trim()
-        const date = new Date(`${$ParsedXML($row).find('S2_CURR_DATE').text().trim()} 09:00`)
-
-        previousDates[isoCode] = date
+        const isoCode = $XML($row).find('CODE').text().trim()
+        const date = new Date(`${$XML($row).find('S2_CURR_DATE').text().trim()} 09:00`)
 
         rates.push(ExchangeRateRepo.create({
           date,
