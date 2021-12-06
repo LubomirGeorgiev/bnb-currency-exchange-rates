@@ -9,16 +9,15 @@ import { URL, URLSearchParams } from 'url'
 import {
   max as maxDate,
   subDays,
-  addDays,
   isAfter as isAfterDate,
   isValid as isValiDate,
+  format
 } from 'date-fns'
 import cheerio from 'cheerio'
-
 import publicIP from 'public-ip'
 import intlFormat from 'date-fns/intlFormat'
+import chunk from 'lodash/chunk'
 
-import { PrevDates } from './types'
 import { ExchangeRateRepository } from './repository/ExchangeRate'
 import { ExchangeRate } from './entity/ExchangeRate'
 
@@ -77,6 +76,9 @@ BulgarianNationalBank.interceptors.request.use(request => {
   global.typeormConnection = connection
 
   const ExchangeRateRepo = connection.getCustomRepository(ExchangeRateRepository)
+  const QB_ALIAS = 'r'
+  const dbInsertChunkSize = 500
+  const queryBuilder = ExchangeRateRepo.createQueryBuilder(QB_ALIAS)
 
   const queryParams = new URLSearchParams({
     type: 'XML',
@@ -127,26 +129,38 @@ BulgarianNationalBank.interceptors.request.use(request => {
 
     const rates: ExchangeRate[] = []
 
-    $XML('ROW').toArray().reverse().map(($row) => {
+    for (const [_rowKey, $row] of $XML('ROW').toArray().reverse().entries()) {
       const rate = parseFloat($XML($row).find('RATE').text())
 
       if (isNumber(rate)) {
         const isoCode = $XML($row).find('CODE').text().trim()
-        const date = new Date(`${$XML($row).find('S2_CURR_DATE').text().trim()} 09:00`)
+        const date = new Date(`${$XML($row).find('S2_CURR_DATE').text().trim()} 13:00`)
 
-        rates.push(ExchangeRateRepo.create({
-          date,
-          isoCode,
-          rate
-        }))
+        const exists = await queryBuilder
+          .select([`${QB_ALIAS}.id`])
+          .where(`${QB_ALIAS}.isoCode = :isoCode`, { isoCode })
+          .andWhere(`strftime('%Y-%m-%d', ${QB_ALIAS}.date) = :date`, {
+            date: format(date, 'yyyy-MM-dd'),
+          })
+          .getOne()
+
+        if (!exists) {
+          rates.push(ExchangeRateRepo.create({
+            date,
+            isoCode,
+            rate
+          }))
+        }
       }
-    })
+    }
 
-    await ExchangeRateRepo
-      .createQueryBuilder()
-      .insert()
-      .values(rates)
-      .execute()
-
+    for (const [_, ratesChunk] of chunk(rates, dbInsertChunkSize).entries()) {
+      await queryBuilder
+        .insert()
+        .values(ratesChunk)
+          // Don't make a SELECT query after the insert: https://github.com/typeorm/typeorm/issues/4651#issuecomment-575991809
+        .updateEntity(false)
+        .execute()
+    }
   }
 })();
