@@ -9,6 +9,7 @@ import { nanoid } from 'nanoid'
 export class BaseTable {
 
     @PrimaryColumn("varchar", {
+      // If you this you will also need to change the nanoid config in 'beforeInsert()'
       length: 18
     })
     id: string;

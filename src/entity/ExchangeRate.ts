@@ -7,7 +7,7 @@ import { BaseTable } from '../utils'
 @Entity()
 export class ExchangeRate extends BaseTable {
 
-  @Column('date')
+  @Column('datetime')
   date: Date;
 
   @Column('varchar', {
@@ -17,10 +17,4 @@ export class ExchangeRate extends BaseTable {
 
   @Column('decimal')
   rate: number;
-
-  @Column({
-    type: 'boolean',
-    default: false
-  })
-  wasMissing?: boolean
 }

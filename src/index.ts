@@ -12,7 +12,6 @@ import {
   addDays,
   isAfter as isAfterDate,
   isValid as isValiDate,
-  differenceInDays
 } from 'date-fns'
 import cheerio from 'cheerio'
 
@@ -135,9 +134,7 @@ BulgarianNationalBank.interceptors.request.use(request => {
 
       if (isNumber(rate)) {
         const isoCode = $ParsedXML($row).find('CODE').text().trim()
-        const date = new Date($ParsedXML($row).find('S2_CURR_DATE').text().trim())
-        const previousDate = previousDates?.[isoCode]
-        const numberOfMissingDays = previousDate ? differenceInDays(previousDate, addDays(date, 1)) : 0
+        const date = new Date(`${$ParsedXML($row).find('S2_CURR_DATE').text().trim()} 09:00`)
 
         previousDates[isoCode] = date
 
