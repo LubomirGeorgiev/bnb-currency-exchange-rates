@@ -1,7 +1,7 @@
-import { createConnection } from 'typeorm'
+import { Connection } from 'typeorm'
 
 declare global {
-  var typeormConnection: ReturnType<typeof createConnection>;
+  var typeormConnection: Connection;
 }
 
 declare module 'isnumeric' {

@@ -16,6 +16,7 @@ const exec = promisify(exe);
 
 (async () => {
 
+  // TODO We should read from the sqlite db instead of the file system
   const dataDir = join(__dirname, `../${process.env.DATA_DIR}`)
   const readmeFilePath = join(__dirname, '../README.md')
   const readmeFileAsText = await readFile(readmeFilePath, 'utf8')

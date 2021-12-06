@@ -1,10 +1,11 @@
 import 'reflect-metadata'
 import 'dotenv-defaults/config'
 
-import { createConnection } from "typeorm"
+console.time('Execution Time');
+
+import { Connection, createConnection } from "typeorm"
 import Axios from 'axios'
-import { URLSearchParams } from 'url'
-import faker from 'faker'
+import { URL, URLSearchParams } from 'url'
 import {
   max as maxDate,
   subDays,
@@ -13,167 +14,146 @@ import {
   isValid as isValiDate,
   differenceInDays
 } from 'date-fns'
-import isNumeric from 'isnumeric'
 import cheerio from 'cheerio'
-import { AsyncParser } from 'json2csv'
 
-import { createWriteStream, existsSync } from 'fs'
-import { mkdir } from 'fs/promises'
 import publicIP from 'public-ip'
-
-import { PrevDates } from './types'
 import intlFormat from 'date-fns/intlFormat'
 
+import { PrevDates } from './types'
+import { ExchangeRateRepository } from './repository/ExchangeRate'
+import { ExchangeRate } from './entity/ExchangeRate'
+
 let numberOfRequests = 0
-console.time('Execution Time');
+const currentTime = new Date()
+const stepInDays = parseFloat(process.env.STEP_IN_DAYS || '')
+const timeZone = 'Europe/Sofia'
+const fakeUserAgents = [
+  'Mozilla/5.0 (compatible; MSIE 10.0; Windows 95; Trident/3.0)',
+  'Mozilla/5.0 (Windows; U; Windows NT 6.2) AppleWebKit/534.7.1 (KHTML, like Gecko) Version/4.0.4 Safari/534.7.1',
+  'Mozilla/5.0 (Macintosh; U; PPC Mac OS X 10_7_4) AppleWebKit/5341 (KHTML, like Gecko) Chrome/37.0.884.0 Mobile Safari/5341',
+  'Mozilla/5.0 (Windows; U; Windows NT 4.0) AppleWebKit/532.36.1 (KHTML, like Gecko) Version/4.0.4 Safari/532.36.1',
+  'Mozilla/5.0 (X11; Linux i686) AppleWebKit/5330 (KHTML, like Gecko) Chrome/38.0.898.0 Mobile Safari/5330',
+  'Mozilla/5.0 (Windows NT 4.0) AppleWebKit/5331 (KHTML, like Gecko) Chrome/36.0.814.0 Mobile Safari/5331',
+  'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Trident/3.1)',
+  'Mozilla/5.0 (Windows NT 6.2; en-US; rv:1.9.2.20) Gecko/20180529 Firefox/35.0',
+  'Mozilla/5.0 (Windows NT 6.2) AppleWebKit/5350 (KHTML, like Gecko) Chrome/37.0.838.0 Mobile Safari/5350'
+]
 
+const isNumber = (num: number) => typeof num === 'number' && !isNaN(num)
 
-process.on('exit', () => {
-  console.timeEnd('Execution Time')
-  console.log(`Number of requests: ${numberOfRequests}`)
-})
+const endDate = new Date(process.env.END_DATE || '')
 
-export const connection = createConnection()
+if (!isValiDate(endDate)) {
+  throw new Error('The env variable "END_DATE" must be a valid date')
+}
 
-global.typeormConnection = connection
+if (!isNumber(stepInDays)) {
+  throw new Error('The env variable "STEP_IN_DAYS" must be a number')
+}
 
+let connection: undefined | Connection = undefined
 
 const BulgarianNationalBank = Axios.create({
   baseURL: 'https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies'
 })
 
-// BulgarianNationalBank.interceptors.request.use(request => {
-//   numberOfRequests++
-//   return request
-// })
+process.on('exit', () => {
+  const domain = `${new URL(BulgarianNationalBank.defaults.baseURL || '').hostname}`
+  console.log('\n')
+  console.timeEnd('Execution Time')
+  console.log(`Number of requests to ${domain}: ${numberOfRequests}`)
+})
 
-// const endDate = new Date(process.env.END_DATE!)
+BulgarianNationalBank.interceptors.request.use(request => {
+  numberOfRequests++
+  return request
+});
 
-// if (!isValiDate(endDate)) {
-//   throw new Error('The env variable "END_DATE" must be a valid date')
-// }
+(async () => {
+  const userAgent = fakeUserAgents[Math.floor(Math.random() * fakeUserAgents.length)]
+  console.log(`Current IP Address is: ${await publicIP.v4()}`)
+  console.log(`User Agent: ${userAgent}\n`)
 
-// export const commonParams = {
-//   type: 'XML',
-//   downloadOper: 'true',
-//   group1: 'second',
-//   search: 'true',
-//   showChart: 'false',
-//   showChartButton: 'true'
-// };
+  connection = await createConnection()
+  global.typeormConnection = connection
 
-// (async () => {
-//   console.log(`Current IP Address is: ${await publicIP.v4()}\n`)
+  const ExchangeRateRepo = connection.getCustomRepository(ExchangeRateRepository)
 
-//   const columns = {
-//     date: 'date',
-//     rate: 'rate',
-//     reverseRate: 'reverseRate',
-//     isoCode: 'isoCode',
-//     wasMissing: 'wasMissing'
-//   }
+  const queryParams = new URLSearchParams({
+    type: 'XML',
+    downloadOper: 'true',
+    group1: 'second',
+    search: 'true',
+    showChart: 'false',
+    showChartButton: 'true'
+  })
+  const $ = cheerio.load((await BulgarianNationalBank.get('?search=true')).data)
 
-//   const commonParamObject = new URLSearchParams()
-//   const $ = cheerio.load((await BulgarianNationalBank.get('?search=true')).data)
+  $('select#valutes > option').toArray().map(($currencyOption) => {
+    const currencyISOCode = $($currencyOption).text().trim()
 
-//   const csvFiles = {}
+    if (currencyISOCode.length === 3) {
+      queryParams.append('valutes', currencyISOCode)
+    }
+  })
 
-//   if (!existsSync(process.env.DATA_DIR!)) {
-//     await mkdir(process.env.DATA_DIR!, {
-//       recursive: true
-//     })
-//   }
+  for (
+    let cursor = currentTime, requestIndex = 0;
+    isAfterDate(cursor, endDate);
+    cursor = subDays(cursor, stepInDays), requestIndex++
+  ) {
+    const periodEnd = requestIndex === 0 ? cursor : subDays(cursor, 1)
+    const periodStart = maxDate([
+      subDays(cursor, stepInDays), endDate
+    ])
 
-//   // Get all available currencies
-//   $('select#valutes > option').toArray().map(($currencyOption) => {
-//     const currencyISOCode = $($currencyOption).text().trim()
+    console.log(`${JSON.stringify({ request: numberOfRequests, periodStart, periodEnd })}`)
 
-//     if (currencyISOCode.length === 3) {
-//       csvFiles[currencyISOCode] = new AsyncParser({
-//         fields: Object.values(columns)
-//       }).toOutput(createWriteStream(`${process.env.DATA_DIR}/${currencyISOCode}.csv`, { encoding: 'utf8' }))
+    const periodParams = new URLSearchParams()
 
-//       commonParamObject.append('valutes', currencyISOCode)
-//     }
-//   })
+    periodParams.append('periodStartDays', intlFormat(periodStart, { timeZone, day: 'numeric' }))
+    periodParams.append('periodStartMonths', intlFormat(periodStart, { timeZone, month: 'numeric' }))
+    periodParams.append('periodStartYear', intlFormat(periodStart, { timeZone, year: 'numeric' }))
+    periodParams.append('periodEndDays', intlFormat(periodEnd, { timeZone, day: 'numeric' }))
+    periodParams.append('periodEndMonths', intlFormat(periodEnd, { timeZone, month: 'numeric' }))
+    periodParams.append('periodEndYear', intlFormat(periodEnd, { timeZone, year: 'numeric' }))
 
-//   for (const [paramKey, paramValue] of Object.entries(commonParams)) {
-//     commonParamObject.append(paramKey, paramValue)
-//   }
+    const XMLResponse = await BulgarianNationalBank.get(`index.htm?${periodParams.toString()}&${queryParams.toString()}`, {
+      headers: {
+        'user-agent': userAgent
+      }
+    })
 
-//   const currentTime = new Date()
-//   const stepInDays = 240
+    const $ParsedXML = cheerio.load(XMLResponse?.data, { xmlMode: true })
 
-//   const timeZone = 'Europe/Sofia'
+    const previousDates: PrevDates = {}
 
-//   for (
-//     let cursor = currentTime, requestIndex = 0;
-//     isAfterDate(cursor, endDate);
-//     cursor = subDays(cursor, stepInDays), requestIndex++
-//   ) {
-//     const periodEnd = requestIndex === 0 ? cursor : subDays(cursor, 1)
-//     const periodStart = maxDate([
-//       subDays(cursor, stepInDays), endDate
-//     ])
+    const rates: ExchangeRate[] = []
 
-//     console.log(`Request: ${numberOfRequests}\nPeriod End: ${periodEnd?.toISOString()}\nPeriod Start: ${periodStart?.toISOString()}\n`)
+    $ParsedXML('ROW').toArray().reverse().map(($row, index) => {
+      const rate = parseFloat($ParsedXML($row).find('RATE').text())
 
-//     const periodParams = new URLSearchParams()
+      if (isNumber(rate)) {
+        const isoCode = $ParsedXML($row).find('CODE').text().trim()
+        const date = new Date($ParsedXML($row).find('S2_CURR_DATE').text().trim())
+        const previousDate = previousDates?.[isoCode]
+        const numberOfMissingDays = previousDate ? differenceInDays(previousDate, addDays(date, 1)) : 0
 
+        previousDates[isoCode] = date
 
-//     periodParams.append('periodStartDays', intlFormat(periodStart, { timeZone, day: 'numeric' }))
-//     periodParams.append('periodStartMonths', intlFormat(periodStart, { timeZone, month: 'numeric' }))
-//     periodParams.append('periodStartYear', intlFormat(periodStart, { timeZone, year: 'numeric' }))
-//     periodParams.append('periodEndDays', intlFormat(periodEnd, { timeZone, day: 'numeric' }))
-//     periodParams.append('periodEndMonths', intlFormat(periodEnd, { timeZone, month: 'numeric' }))
-//     periodParams.append('periodEndYear', intlFormat(periodEnd, { timeZone, year: 'numeric' }))
+        rates.push(ExchangeRateRepo.create({
+          date,
+          isoCode,
+          rate
+        }))
+      }
+    })
 
-//     const XMLResponse = await BulgarianNationalBank.get(`index.htm?${periodParams.toString()}&${commonParamObject.toString()}`, {
-//       headers: {
-//         'user-agent': faker.internet.userAgent()
-//       }
-//     })
+    await ExchangeRateRepo
+      .createQueryBuilder()
+      .insert()
+      .values(rates)
+      .execute()
 
-//     const $ParsedXML = cheerio.load(XMLResponse?.data, {
-//       xmlMode: true
-//     })
-
-//     const previousDates: PrevDates = {}
-
-//     $ParsedXML('ROW').toArray().reverse().map(($row) => {
-//       const rate = $ParsedXML($row).find('RATE').text()
-
-//       if (isNumeric(rate)) {
-//         const code = $ParsedXML($row).find('CODE').text().trim()
-//         const reverseRate = $ParsedXML($row).find('REVERSERATE').text().trim()
-//         const date = new Date($ParsedXML($row).find('S2_CURR_DATE').text().trim())
-//         const previousDate = previousDates?.[code]
-//         const numberOfMissingDays = previousDate ? differenceInDays(previousDate, addDays(date, 1)) : 0
-
-//         previousDates[code] = date
-
-//         const csvData = {
-//           [columns.date]: date.toISOString(),
-//           [columns.rate]: rate,
-//           [columns.reverseRate]: reverseRate === 'n/a' ? '' : reverseRate,
-//           [columns.isoCode]: code
-//         }
-
-//         // Fill in missing dates
-//         Array(numberOfMissingDays).fill('')
-//           .map((_, missingDayIndex) => addDays(date, missingDayIndex + 1))
-//           .reverse()
-//           .forEach(dateToAdd => {
-//             csvFiles[code].input.push(JSON.stringify({
-//               ...csvData,
-//               [columns.date]: dateToAdd,
-//               [columns.wasMissing]: 1
-//             }))
-//           })
-
-//         csvFiles[code].input.push(JSON.stringify(csvData))
-//       }
-//     })
-
-//   }
-// })()
+  }
+})();
