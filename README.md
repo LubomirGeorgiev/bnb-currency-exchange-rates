@@ -19,6 +19,16 @@ Last Update: Dec 11, 2021, 4:48:01 AM GMT+2 _(2021-12-11T02:48:01.314Z)_
 
 <!-- END LINKS (DO NOT EVER FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
 
+# How to configure
+
+The default configuration is available in [.env.defaults](.env.defaults).
+If you want to overwrite any of the properties in the default configuration in you create `.env` in the root directory.
+
+# How to use
+
+1. `npm install`
+2. `npm run start`
+
 # How to generate DB migrations
 
 ```
