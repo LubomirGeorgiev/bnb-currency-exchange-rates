@@ -3,22 +3,22 @@ import {
   PrimaryColumn,
   CreateDateColumn,
   UpdateDateColumn
-} from "typeorm";
+} from 'typeorm'
 import { nanoid } from 'nanoid'
 
 export class BaseTable {
 
-    @PrimaryColumn("varchar", {
+    @PrimaryColumn('varchar', {
       // If you this you will also need to change the nanoid config in 'beforeInsert()'
       length: 18
     })
-    id: string;
+      id: string
 
     @CreateDateColumn()
-    created: Date;
+      created: Date
 
     @UpdateDateColumn()
-    updated: Date;
+      updated: Date
 
 
     @BeforeInsert()

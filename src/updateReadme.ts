@@ -63,7 +63,7 @@ const exec = promisify(exe);
     }
   }
 
-  const editedReadme = readmeFileAsText.replace(/(<\!--.*?-->)([\s\S]*?)(<\!--.*?-->)/gmi, `$1\n${markdown}\n$3`)
+  const editedReadme = readmeFileAsText.replace(/(<!--.*?-->)([\s\S]*?)(<!--.*?-->)/gmi, `$1\n${markdown}\n$3`)
 
   writeFile(readmeFilePath, prettier.format(editedReadme, {
     parser: 'markdown'
