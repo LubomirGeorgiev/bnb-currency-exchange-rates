@@ -6,15 +6,19 @@ console.time('Execution Time')
 import { Connection, createConnection } from 'typeorm'
 import Axios from 'axios'
 import { URL, URLSearchParams } from 'url'
+import { join } from 'path'
+import { readFile, writeFile } from 'fs/promises'
 import {
   max as maxDate,
   subDays,
   isAfter as isAfterDate,
   isValid as isValiDate,
+  format
 } from 'date-fns'
 import cheerio from 'cheerio'
 import publicIP from 'public-ip'
 import intlFormat from 'date-fns/intlFormat'
+import prettier from 'prettier'
 
 import { ExchangeRateRepository } from './repository/ExchangeRate'
 
@@ -47,6 +51,7 @@ if (!isNumber(stepInDays)) {
 }
 
 let connection: undefined | Connection = undefined
+const readmeFilePath = join(__dirname, '../README.md')
 
 const BulgarianNationalBank = Axios.create({
   baseURL: 'https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies'
@@ -65,6 +70,7 @@ BulgarianNationalBank.interceptors.request.use(request => {
 });
 
 (async () => {
+  const readmeFileAsText = await readFile(readmeFilePath, 'utf8')
   const userAgent = fakeUserAgents[Math.floor(Math.random() * fakeUserAgents.length)]
   console.log(`Current IP Address is: ${await publicIP.v4()}`)
   console.log(`User Agent: ${userAgent}\n`)
@@ -144,5 +150,31 @@ BulgarianNationalBank.interceptors.request.use(request => {
         } catch {}
       }
     }
+
+    const uniqueRawIsoCodes = await createQueryBuilder()
+      .select('DISTINCT ("isoCode")').getRawMany()
+
+    const uniqueIsoCodes =  uniqueRawIsoCodes.map(entity => entity?.isoCode)
+    let markdown = `\nLast Update: ${format(new Date(), 'PPppp')} _(${new Date().toISOString()})_\n\n| Currency | Number of records |\n|:-:|:-:|`
+
+    console.log(uniqueIsoCodes)
+
+    for (const uniqueIsoCode of uniqueIsoCodes) {
+      const count = await createQueryBuilder()
+        .where(`${QB_ALIAS}.isoCode = :isoCode`, {
+          isoCode: uniqueIsoCode
+        })
+        .orderBy(`${QB_ALIAS}.date`, 'ASC')
+        .getCount()
+
+      markdown = markdown + `\n| ${uniqueIsoCode} | ${count} |`
+    }
+
+    const editedReadme = readmeFileAsText.replace(/(<!--.*?-->)([\s\S]*?)(<!--.*?-->)/gmi, `$1\n${markdown}\n$3`)
+
+    writeFile(readmeFilePath, prettier.format(editedReadme, {
+      parser: 'markdown'
+    }))
+
   }
 })()

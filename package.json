@@ -8,7 +8,6 @@
     "start": "node --unhandled-rejections=strict -r ts-node/register .",
     "inspect": "node --inspect-brk -r ts-node/register .",
     "build": "tsc",
-    "update-readme": "ts-node src/updateReadme.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "stats": "sloc ./src > stats.txt && find ./src -type f -iregex '.*\\.\\(tsx\\|ts\\)$' -printf '%s\t%p\n' | sort -nr >> stats.txt",
     "ci": "npm run lint && npm run stats && npm run start && npm run update-readme",

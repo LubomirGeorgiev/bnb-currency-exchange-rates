@@ -2,7 +2,7 @@ import { Entity, Column, Unique } from 'typeorm'
 
 import { BaseTable } from '../utils'
 
-@Entity()
+@Entity('exchange_rates')
 @Unique('UQ_RATE', ['isoCode',
   'date',
   'rate'])
