@@ -155,9 +155,7 @@ BulgarianNationalBank.interceptors.request.use(request => {
       .select('DISTINCT ("isoCode")').getRawMany()
 
     const uniqueIsoCodes =  uniqueRawIsoCodes.map(entity => entity?.isoCode)
-    let markdown = `\nLast Update: ${format(new Date(), 'PPppp')} _(${new Date().toISOString()})_\n\n| Currency | Number of records |\n|:-:|:-:|`
-
-    console.log(uniqueIsoCodes)
+    let markdown = `\nLast Update: ${format(new Date(), 'PPppp')} _(${new Date().toISOString()})_\n\n| Currency (ISO Code) | Number of records |\n|:-:|:-:|`
 
     for (const uniqueIsoCode of uniqueIsoCodes) {
       const count = await createQueryBuilder()
