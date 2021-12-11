@@ -2,7 +2,6 @@ import {
   BeforeInsert,
   PrimaryColumn,
   CreateDateColumn,
-  UpdateDateColumn
 } from 'typeorm'
 import { nanoid } from 'nanoid'
 
@@ -16,10 +15,6 @@ export class BaseTable {
 
     @CreateDateColumn()
       created: Date
-
-    @UpdateDateColumn()
-      updated: Date
-
 
     @BeforeInsert()
     beforeInsert() {

@@ -27,7 +27,7 @@ If you want to overwrite any of the properties in the default configuration in y
 # How to use
 
 1. `npm install`
-2. `npm run start`
+2. `npm run start` - This will update the SQLite database file ([`data/data.db`](data/rates.db))
 
 # How to generate DB migrations
 
