@@ -79,8 +79,6 @@ BulgarianNationalBank.interceptors.request.use(request => {
   global.typeormConnection = connection
 
   const ExchangeRateRepo = connection.getCustomRepository(ExchangeRateRepository)
-  const QB_ALIAS = 'r'
-  const createQueryBuilder = () => ExchangeRateRepo.createQueryBuilder(QB_ALIAS)
 
   const queryParams = new URLSearchParams({
     type: 'XML',
@@ -137,33 +135,22 @@ BulgarianNationalBank.interceptors.request.use(request => {
         const date = new Date(`${$XML($row).find('S2_CURR_DATE').text().trim()} 13:00`)
 
         try {
-          await createQueryBuilder()
-            .insert()
-            .values(ExchangeRateRepo.create({
-              date,
-              isoCode,
-              rate
-            }))
-            // Don't make a SELECT query after the insert: https://github.com/typeorm/typeorm/issues/4651#issuecomment-575991809
-            .updateEntity(false)
-            .execute()
+          await ExchangeRateRepo.save(ExchangeRateRepo.create({
+            date,
+            isoCode,
+            rate
+          }), { reload: false })
         } catch {}
       }
     }
 
-    const uniqueRawIsoCodes = await createQueryBuilder()
-      .select('DISTINCT ("isoCode")').getRawMany()
+    const uniqueRawIsoCodes = await ExchangeRateRepo.getUniqueIsoCodes()
 
     const uniqueIsoCodes =  uniqueRawIsoCodes.map(entity => entity?.isoCode)
     let markdown = `\nLast Update: ${format(new Date(), 'PPppp')} _(${new Date().toISOString()})_\n\n| Currency (ISO Code) | Number of records |\n|:-:|:-:|`
 
     for (const uniqueIsoCode of uniqueIsoCodes) {
-      const count = await createQueryBuilder()
-        .where(`${QB_ALIAS}.isoCode = :isoCode`, {
-          isoCode: uniqueIsoCode
-        })
-        .orderBy(`${QB_ALIAS}.date`, 'ASC')
-        .getCount()
+      const count = await ExchangeRateRepo.getCountByIsoCode(uniqueIsoCode)
 
       markdown = markdown + `\n| ${uniqueIsoCode} | ${count} |`
     }
