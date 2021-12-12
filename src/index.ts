@@ -34,16 +34,16 @@ class ExchangeRateController {
     baseURL: 'https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies'
   })
   fakeUserAgents = [
-  'Mozilla/5.0 (compatible; MSIE 10.0; Windows 95; Trident/3.0)',
-  'Mozilla/5.0 (Windows; U; Windows NT 6.2) AppleWebKit/534.7.1 (KHTML, like Gecko) Version/4.0.4 Safari/534.7.1',
-  'Mozilla/5.0 (Macintosh; U; PPC Mac OS X 10_7_4) AppleWebKit/5341 (KHTML, like Gecko) Chrome/37.0.884.0 Mobile Safari/5341',
-  'Mozilla/5.0 (Windows; U; Windows NT 4.0) AppleWebKit/532.36.1 (KHTML, like Gecko) Version/4.0.4 Safari/532.36.1',
-  'Mozilla/5.0 (X11; Linux i686) AppleWebKit/5330 (KHTML, like Gecko) Chrome/38.0.898.0 Mobile Safari/5330',
-  'Mozilla/5.0 (Windows NT 4.0) AppleWebKit/5331 (KHTML, like Gecko) Chrome/36.0.814.0 Mobile Safari/5331',
-  'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Trident/3.1)',
-  'Mozilla/5.0 (Windows NT 6.2; en-US; rv:1.9.2.20) Gecko/20180529 Firefox/35.0',
-  'Mozilla/5.0 (Windows NT 6.2) AppleWebKit/5350 (KHTML, like Gecko) Chrome/37.0.838.0 Mobile Safari/5350'
-]
+    'Mozilla/5.0 (compatible; MSIE 10.0; Windows 95; Trident/3.0)',
+    'Mozilla/5.0 (Windows; U; Windows NT 6.2) AppleWebKit/534.7.1 (KHTML, like Gecko) Version/4.0.4 Safari/534.7.1',
+    'Mozilla/5.0 (Macintosh; U; PPC Mac OS X 10_7_4) AppleWebKit/5341 (KHTML, like Gecko) Chrome/37.0.884.0 Mobile Safari/5341',
+    'Mozilla/5.0 (Windows; U; Windows NT 4.0) AppleWebKit/532.36.1 (KHTML, like Gecko) Version/4.0.4 Safari/532.36.1',
+    'Mozilla/5.0 (X11; Linux i686) AppleWebKit/5330 (KHTML, like Gecko) Chrome/38.0.898.0 Mobile Safari/5330',
+    'Mozilla/5.0 (Windows NT 4.0) AppleWebKit/5331 (KHTML, like Gecko) Chrome/36.0.814.0 Mobile Safari/5331',
+    'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Trident/3.1)',
+    'Mozilla/5.0 (Windows NT 6.2; en-US; rv:1.9.2.20) Gecko/20180529 Firefox/35.0',
+    'Mozilla/5.0 (Windows NT 6.2) AppleWebKit/5350 (KHTML, like Gecko) Chrome/37.0.838.0 Mobile Safari/5350'
+  ]
   userAgent = this.fakeUserAgents[Math.floor(Math.random() * this.fakeUserAgents.length)]
   queryParams = new URLSearchParams({
     type: 'XML',
@@ -63,7 +63,7 @@ class ExchangeRateController {
     this.validateParams()
     this.setupHTTPInterceptors()
     this.setupOnExitEvent()
-    }
+  }
 
   async init() {
     await this.setupDBConnection()
@@ -72,15 +72,15 @@ class ExchangeRateController {
     await this.getReadmeFileContent()
     await this.getAllCurrencies()
 
-  for (
+    for (
       let cursor = this.currentTime, requestIndex = 0;
       isAfterDate(cursor, this.endDate);
       cursor = subDays(cursor, this.stepInDays), requestIndex++
-  ) {
-    const periodEnd = requestIndex === 0 ? cursor : subDays(cursor, 1)
-    const periodStart = maxDate([
+    ) {
+      const periodEnd = requestIndex === 0 ? cursor : subDays(cursor, 1)
+      const periodStart = maxDate([
         subDays(cursor, this.stepInDays), this.endDate
-    ])
+      ])
 
       await this.iteratePeriod(periodStart, periodEnd)
     }
@@ -122,7 +122,7 @@ class ExchangeRateController {
             isoCode,
             rate
           }), { reload: false })
-        } catch {}
+        } catch { }
       }
     }
 
@@ -132,7 +132,7 @@ class ExchangeRateController {
   async updateReadmeFile() {
     const uniqueRawIsoCodes = await this.ExchangeRateRepo.getUniqueIsoCodes()
 
-    const uniqueIsoCodes =  uniqueRawIsoCodes.map(entity => entity?.isoCode)
+    const uniqueIsoCodes = uniqueRawIsoCodes.map(entity => entity?.isoCode)
     let markdown = `\nLast Update: ${format(new Date(), 'PPppp')} _(${new Date().toISOString()})_\n\n| Currency (ISO Code) | Number of records |\n|:-:|:-:|`
 
     for (const uniqueIsoCode of uniqueIsoCodes) {
