@@ -31,7 +31,10 @@ class ExchangeRateController {
   endDate = new Date(process.env.END_DATE || '')
   timeZone = 'Europe/Sofia'
   BulgarianNationalBank = Axios.create({
-    baseURL: 'https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies'
+    baseURL: 'https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies',
+    headers: {
+      accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'
+    }
   })
   fakeUserAgents = [
     'Mozilla/5.0 (compatible; MSIE 10.0; Windows 95; Trident/3.0)',
@@ -55,22 +58,22 @@ class ExchangeRateController {
   })
   readmeFilePath = join(__dirname, '../README.md')
 
+  currenciesToFetch: Array<string>
   readmeFileAsText: string
   connection: Connection
   ExchangeRateRepo: ExchangeRateRepository
 
   constructor() {
-    this.validateParams()
     this.setupHTTPInterceptors()
     this.setupOnExitEvent()
   }
 
   async init() {
+    await this.validateParams()
     await this.setupDBConnection()
     console.log(`Current IP Address is: ${await publicIP.v4()}`)
     console.log(`User Agent: ${this.userAgent}\n`)
     await this.getReadmeFileContent()
-    await this.getAllCurrencies()
 
     for (
       let cursor = this.currentTime, requestIndex = 0;
@@ -148,7 +151,15 @@ class ExchangeRateController {
     }))
   }
 
-  validateParams() {
+  async validateParams() {
+    if (process.env.CURRENCIES_TO_FETCH) {
+      this.currenciesToFetch = process.env.CURRENCIES_TO_FETCH.split(',')
+
+      this.currenciesToFetch.map(isoCode => this.queryParams.append('valutes', isoCode))
+    } else {
+      await this.getAllCurrencies()
+    }
+
     if (!isValiDate(this.endDate)) {
       throw new Error('The env variable "END_DATE" must be a valid date')
     }
@@ -192,10 +203,14 @@ class ExchangeRateController {
     $('select#valutes > option').toArray().map(($currencyOption) => {
       const currencyISOCode = $($currencyOption).text().trim()
 
-      if (currencyISOCode.length === 3) {
+      if (this._isValidCurrencyCode(currencyISOCode)) {
         this.queryParams.append('valutes', currencyISOCode)
       }
     })
+  }
+
+  _isValidCurrencyCode(cur: string) {
+    return typeof cur === 'string' && cur.length === 3 && cur === cur.toUpperCase()
   }
 }
 
