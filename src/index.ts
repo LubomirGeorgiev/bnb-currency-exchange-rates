@@ -1,7 +1,7 @@
+console.time('Execution Time')
+
 import 'reflect-metadata'
 import 'dotenv-defaults/config'
-
-console.time('Execution Time')
 
 import { Connection, createConnection } from 'typeorm'
 import Axios from 'axios'
@@ -22,11 +22,18 @@ import prettier from 'prettier'
 
 import { ExchangeRateRepository } from './repository/ExchangeRate'
 
-let numberOfRequests = 0
-const currentTime = new Date()
-const stepInDays = parseFloat(process.env.STEP_IN_DAYS || '')
-const timeZone = 'Europe/Sofia'
-const fakeUserAgents = [
+const isNumber = (num: number) => typeof num === 'number' && !isNaN(num)
+
+class ExchangeRateController {
+  numberOfRequests = 0
+  currentTime = new Date()
+  stepInDays = parseFloat(process.env.STEP_IN_DAYS || '')
+  endDate = new Date(process.env.END_DATE || '')
+  timeZone = 'Europe/Sofia'
+  BulgarianNationalBank = Axios.create({
+    baseURL: 'https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies'
+  })
+  fakeUserAgents = [
   'Mozilla/5.0 (compatible; MSIE 10.0; Windows 95; Trident/3.0)',
   'Mozilla/5.0 (Windows; U; Windows NT 6.2) AppleWebKit/534.7.1 (KHTML, like Gecko) Version/4.0.4 Safari/534.7.1',
   'Mozilla/5.0 (Macintosh; U; PPC Mac OS X 10_7_4) AppleWebKit/5341 (KHTML, like Gecko) Chrome/37.0.884.0 Mobile Safari/5341',
@@ -37,50 +44,8 @@ const fakeUserAgents = [
   'Mozilla/5.0 (Windows NT 6.2; en-US; rv:1.9.2.20) Gecko/20180529 Firefox/35.0',
   'Mozilla/5.0 (Windows NT 6.2) AppleWebKit/5350 (KHTML, like Gecko) Chrome/37.0.838.0 Mobile Safari/5350'
 ]
-
-const isNumber = (num: number) => typeof num === 'number' && !isNaN(num)
-
-const endDate = new Date(process.env.END_DATE || '')
-
-if (!isValiDate(endDate)) {
-  throw new Error('The env variable "END_DATE" must be a valid date')
-}
-
-if (!isNumber(stepInDays)) {
-  throw new Error('The env variable "STEP_IN_DAYS" must be a number')
-}
-
-let connection: undefined | Connection = undefined
-const readmeFilePath = join(__dirname, '../README.md')
-
-const BulgarianNationalBank = Axios.create({
-  baseURL: 'https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies'
-})
-
-process.on('exit', () => {
-  const domain = `${new URL(BulgarianNationalBank.defaults.baseURL || '').hostname}`
-  console.log('\n')
-  console.timeEnd('Execution Time')
-  console.log(`Number of requests to ${domain}: ${numberOfRequests}`)
-})
-
-BulgarianNationalBank.interceptors.request.use(request => {
-  numberOfRequests++
-  return request
-});
-
-(async () => {
-  const readmeFileAsText = await readFile(readmeFilePath, 'utf8')
-  const userAgent = fakeUserAgents[Math.floor(Math.random() * fakeUserAgents.length)]
-  console.log(`Current IP Address is: ${await publicIP.v4()}`)
-  console.log(`User Agent: ${userAgent}\n`)
-
-  connection = await createConnection()
-  global.typeormConnection = connection
-
-  const ExchangeRateRepo = connection.getCustomRepository(ExchangeRateRepository)
-
-  const queryParams = new URLSearchParams({
+  userAgent = this.fakeUserAgents[Math.floor(Math.random() * this.fakeUserAgents.length)]
+  queryParams = new URLSearchParams({
     type: 'XML',
     downloadOper: 'true',
     group1: 'second',
@@ -88,29 +53,46 @@ BulgarianNationalBank.interceptors.request.use(request => {
     showChart: 'false',
     showChartButton: 'true'
   })
-  const $ = cheerio.load((await BulgarianNationalBank.get('?search=true')).data)
+  readmeFilePath = join(__dirname, '../README.md')
 
-  $('select#valutes > option').toArray().map(($currencyOption) => {
-    const currencyISOCode = $($currencyOption).text().trim()
+  readmeFileAsText: string
+  connection: Connection
+  ExchangeRateRepo: ExchangeRateRepository
 
-    if (currencyISOCode.length === 3) {
-      queryParams.append('valutes', currencyISOCode)
+  constructor() {
+    this.validateParams()
+    this.setupHTTPInterceptors()
+    this.setupOnExitEvent()
     }
-  })
+
+  async init() {
+    await this.setupDBConnection()
+    console.log(`Current IP Address is: ${await publicIP.v4()}`)
+    console.log(`User Agent: ${this.userAgent}\n`)
+    await this.getReadmeFileContent()
+    await this.getAllCurrencies()
 
   for (
-    let cursor = currentTime, requestIndex = 0;
-    isAfterDate(cursor, endDate);
-    cursor = subDays(cursor, stepInDays), requestIndex++
+      let cursor = this.currentTime, requestIndex = 0;
+      isAfterDate(cursor, this.endDate);
+      cursor = subDays(cursor, this.stepInDays), requestIndex++
   ) {
     const periodEnd = requestIndex === 0 ? cursor : subDays(cursor, 1)
     const periodStart = maxDate([
-      subDays(cursor, stepInDays), endDate
+        subDays(cursor, this.stepInDays), this.endDate
     ])
 
-    console.log(`${JSON.stringify({ request: numberOfRequests, periodStart, periodEnd })}`)
+      await this.iteratePeriod(periodStart, periodEnd)
+    }
+
+    return this
+  }
+
+  async iteratePeriod(periodStart: Date, periodEnd: Date) {
+    console.log(`${JSON.stringify({ request: this.numberOfRequests, periodStart, periodEnd })}`)
 
     const periodQueryParams = new URLSearchParams()
+    const timeZone = this.timeZone
 
     periodQueryParams.append('periodStartDays', intlFormat(periodStart, { timeZone, day: 'numeric' }))
     periodQueryParams.append('periodStartMonths', intlFormat(periodStart, { timeZone, month: 'numeric' }))
@@ -119,9 +101,9 @@ BulgarianNationalBank.interceptors.request.use(request => {
     periodQueryParams.append('periodEndMonths', intlFormat(periodEnd, { timeZone, month: 'numeric' }))
     periodQueryParams.append('periodEndYear', intlFormat(periodEnd, { timeZone, year: 'numeric' }))
 
-    const XMLResponse = await BulgarianNationalBank.get(`index.htm?${periodQueryParams.toString()}&${queryParams.toString()}`, {
+    const XMLResponse = await this.BulgarianNationalBank.get(`index.htm?${periodQueryParams.toString()}&${this.queryParams.toString()}`, {
       headers: {
-        'user-agent': userAgent
+        'user-agent': this.userAgent
       }
     })
 
@@ -135,7 +117,7 @@ BulgarianNationalBank.interceptors.request.use(request => {
         const date = new Date(`${$XML($row).find('S2_CURR_DATE').text().trim()} 13:00`)
 
         try {
-          await ExchangeRateRepo.save(ExchangeRateRepo.create({
+          await this.ExchangeRateRepo.save(this.ExchangeRateRepo.create({
             date,
             isoCode,
             rate
@@ -144,22 +126,77 @@ BulgarianNationalBank.interceptors.request.use(request => {
       }
     }
 
-    const uniqueRawIsoCodes = await ExchangeRateRepo.getUniqueIsoCodes()
+    await this.updateReadmeFile()
+  }
+
+  async updateReadmeFile() {
+    const uniqueRawIsoCodes = await this.ExchangeRateRepo.getUniqueIsoCodes()
 
     const uniqueIsoCodes =  uniqueRawIsoCodes.map(entity => entity?.isoCode)
     let markdown = `\nLast Update: ${format(new Date(), 'PPppp')} _(${new Date().toISOString()})_\n\n| Currency (ISO Code) | Number of records |\n|:-:|:-:|`
 
     for (const uniqueIsoCode of uniqueIsoCodes) {
-      const count = await ExchangeRateRepo.getCountByIsoCode(uniqueIsoCode)
+      const count = await this.ExchangeRateRepo.getCountByIsoCode(uniqueIsoCode)
 
       markdown = markdown + `\n| ${uniqueIsoCode} | ${count} |`
     }
 
-    const editedReadme = readmeFileAsText.replace(/(<!--.*?-->)([\s\S]*?)(<!--.*?-->)/gmi, `$1\n${markdown}\n$3`)
+    const modifiedReadmeFileContent = this.readmeFileAsText.replace(/(<!--.*?-->)([\s\S]*?)(<!--.*?-->)/gmi, `$1\n${markdown}\n$3`)
 
-    writeFile(readmeFilePath, prettier.format(editedReadme, {
+    writeFile(this.readmeFilePath, prettier.format(modifiedReadmeFileContent, {
       parser: 'markdown'
     }))
-
   }
-})()
+
+  validateParams() {
+    if (!isValiDate(this.endDate)) {
+      throw new Error('The env variable "END_DATE" must be a valid date')
+    }
+
+    if (!isNumber(this.stepInDays)) {
+      throw new Error('The env variable "STEP_IN_DAYS" must be a number')
+    }
+  }
+
+  async setupDBConnection() {
+    this.connection = await createConnection()
+
+    this.ExchangeRateRepo = this.connection.getCustomRepository(ExchangeRateRepository)
+
+    global.typeormConnection = this.connection
+  }
+
+  setupHTTPInterceptors() {
+    this.BulgarianNationalBank.interceptors.request.use(request => {
+      this.numberOfRequests = this.numberOfRequests + 1
+      return request
+    })
+  }
+
+  async getReadmeFileContent() {
+    this.readmeFileAsText = await readFile(this.readmeFilePath, 'utf8')
+  }
+
+  setupOnExitEvent() {
+    process.on('exit', () => {
+      const domain = `${new URL(this.BulgarianNationalBank.defaults.baseURL || '').hostname}`
+      console.log('\n')
+      console.timeEnd('Execution Time')
+      console.log(`Number of requests to ${domain}: ${this.numberOfRequests}`)
+    })
+  }
+
+  async getAllCurrencies() {
+    const $ = cheerio.load((await this.BulgarianNationalBank.get('?search=true')).data)
+
+    $('select#valutes > option').toArray().map(($currencyOption) => {
+      const currencyISOCode = $($currencyOption).text().trim()
+
+      if (currencyISOCode.length === 3) {
+        this.queryParams.append('valutes', currencyISOCode)
+      }
+    })
+  }
+}
+
+new ExchangeRateController().init()
