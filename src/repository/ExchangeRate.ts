@@ -22,4 +22,10 @@ export class ExchangeRateRepository extends Repository<ExchangeRate> {
       .orderBy(`${this.ALIAS}.date`, 'ASC')
       .getCount()
   }
+
+  async getByDate() {
+    return this.createQueryBuilder(this.ALIAS)
+      .orderBy(`${this.ALIAS}.date`, 'ASC')
+      .getMany()
+  }
 }

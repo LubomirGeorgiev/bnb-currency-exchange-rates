@@ -121,3 +121,4 @@ yarn.lock
 *.db
 !rates.db
 *.db-journal
+*.zip

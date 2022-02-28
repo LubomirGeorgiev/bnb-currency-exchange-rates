@@ -5,11 +5,12 @@ import {
 } from 'typeorm'
 import { nanoid } from 'nanoid'
 
+const IDLength = 20
+
 export class BaseTable {
 
     @PrimaryColumn('varchar', {
-      // If you this you will also need to change the nanoid config in 'beforeInsert()'
-      length: 18
+      length: IDLength
     })
       id: string
 
@@ -18,10 +19,7 @@ export class BaseTable {
 
     @BeforeInsert()
     beforeInsert() {
-      // ---------------------------------------------------------------------------------
-      // |  If you change this don't also forget to change the len of the PrimaryColumn  |
-      // ---------------------------------------------------------------------------------
-      this.id = nanoid(18)
+      this.id = nanoid(IDLength)
     }
 
 }
