@@ -3,14 +3,16 @@
 import { Connection, createConnection } from 'typeorm'
 import Axios from 'axios'
 import { URL, URLSearchParams } from 'url'
-import { join } from 'path'
+import {
+  join, dirname
+} from 'path'
 import { readFile, writeFile } from 'fs/promises'
 import {
   max as maxDate,
   subDays,
   isAfter as isAfterDate,
   isValid as isValiDate,
-  format
+  format,
 } from 'date-fns'
 import cheerio from 'cheerio'
 import publicIP from 'public-ip'
@@ -18,10 +20,13 @@ import intlFormat from 'date-fns/intlFormat'
 import prettier from 'prettier'
 
 import { ExchangeRateRepository } from '../repository/ExchangeRate'
+import { ExchangeRate } from 'entity/ExchangeRate'
 
 const isNumber = (num: number) => typeof num === 'number' && !isNaN(num)
 
 const oneDayInMilliseconds = 86400000
+
+type MissingDateType = { date: Date, parent: ExchangeRate  }
 
 class ExchangeRateController {
   numberOfRequests = 0
@@ -55,7 +60,7 @@ class ExchangeRateController {
     showChart: 'false',
     showChartButton: 'true'
   })
-  readmeFilePath = join(__dirname, '../README.md')
+  readmeFilePath = join(dirname(require.main.filename), '../README.md')
 
   currenciesToFetch: Array<string>
   readmeFileAsText: string
@@ -74,36 +79,54 @@ class ExchangeRateController {
     console.log(`User Agent: ${this.userAgent}\n`)
     await this.getReadmeFileContent()
 
-    // for (
-    //   let cursor = this.currentTime, requestIndex = 0;
-    //   isAfterDate(cursor, this.endDate);
-    //   cursor = subDays(cursor, this.stepInDays), requestIndex++
-    // ) {
-    //   const periodEnd = requestIndex === 0 ? cursor : subDays(cursor, 1)
-    //   const periodStart = maxDate([
-    //     subDays(cursor, this.stepInDays), this.endDate
-    //   ])
+    for (
+      let cursor = this.currentTime, requestIndex = 0;
+      isAfterDate(cursor, this.endDate);
+      cursor = subDays(cursor, this.stepInDays), requestIndex++
+    ) {
+      const periodEnd = requestIndex === 0 ? cursor : subDays(cursor, 1)
+      const periodStart = maxDate([
+        subDays(cursor, this.stepInDays), this.endDate
+      ])
 
-    //   await this.iteratePeriod(periodStart, periodEnd)
-    // }
+      await this.iteratePeriod(periodStart, periodEnd)
+    }
 
-    console.log(JSON.stringify(this.getMissingDays(await this.ExchangeRateRepo.getByDate()), null, 2))
+    const missingDays = this.getMissingDays(await this.ExchangeRateRepo.getByDate())
+    await this.backfillDates(missingDays)
 
     return this
   }
 
-  getMissingDays(arrayOfDates: { date: Date }[]) {
+  async backfillDates(missingDates: MissingDateType[]) {
+
+    for (const missingDate of missingDates) {
+      const missingDateToBackfill = this.ExchangeRateRepo.create({
+        date: missingDate?.date,
+        isoCode: missingDate?.parent?.isoCode,
+        rate: missingDate?.parent?.rate,
+        backfilled: true,
+      })
+
+      await this.ExchangeRateRepo.save(missingDateToBackfill, { reload: false })
+    }
+  }
+
+  getMissingDays(arrayOfDates: ExchangeRate[]): MissingDateType[] {
     const missingDates = []
 
     for (let i = 1; i < arrayOfDates.length; i++) {
-      const daysDiff = ((arrayOfDates[i]?.date - arrayOfDates[i - 1]?.date) / oneDayInMilliseconds) - 1
+      const currentEntity = arrayOfDates?.[i - 1]
+      const currentDate = currentEntity?.date
+      const daysDiff = ((arrayOfDates[i]?.date - currentDate) / oneDayInMilliseconds) - 1
 
       for (let j = 1; j <= daysDiff; j++) {
-        const missingDate = new Date(arrayOfDates[i - 1]?.date)
-        console.log('-before', missingDate)
-        missingDate.setDate(arrayOfDates[i - 1]?.date?.getDate() + j)
-        console.log('-after', missingDate)
-        missingDates.push(missingDate)
+        const missingDate = new Date(currentDate)
+        missingDate.setDate(currentDate?.getDate() + j)
+        missingDates.push({
+          date: missingDate,
+          parent: currentEntity
+        })
       }
     }
 

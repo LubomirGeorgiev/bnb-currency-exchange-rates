@@ -8,14 +8,18 @@ import { ExchangeRate } from '../entity/ExchangeRate'
 export class ExchangeRateRepository extends Repository<ExchangeRate> {
   ALIAS = 'r'
 
-  async getUniqueIsoCodes() {
+  createQuery() {
     return this.createQueryBuilder(this.ALIAS)
+  }
+
+  async getUniqueIsoCodes() {
+    return this.createQuery()
       .select('DISTINCT ("isoCode")')
       .getRawMany()
   }
 
   async getCountByIsoCode(isoCode: string) {
-    return this.createQueryBuilder(this.ALIAS)
+    return this.createQuery()
       .where(`${this.ALIAS}.isoCode = :isoCode`, {
         isoCode: isoCode
       })
@@ -24,7 +28,7 @@ export class ExchangeRateRepository extends Repository<ExchangeRate> {
   }
 
   async getByDate() {
-    return this.createQueryBuilder(this.ALIAS)
+    return this.createQuery()
       .orderBy(`${this.ALIAS}.date`, 'ASC')
       .getMany()
   }
