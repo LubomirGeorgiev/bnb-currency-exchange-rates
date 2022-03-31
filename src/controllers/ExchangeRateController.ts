@@ -3,6 +3,7 @@
 import { Connection, createConnection } from 'typeorm'
 import Axios from 'axios'
 import { URL, URLSearchParams } from 'url'
+import toMilliseconds from 'ms'
 import {
   join, dirname
 } from 'path'
@@ -23,8 +24,6 @@ import { ExchangeRateRepository } from '../repository/ExchangeRate'
 import { ExchangeRate } from 'entity/ExchangeRate'
 
 const isNumber = (num: number) => typeof num === 'number' && !isNaN(num)
-
-const oneDayInMilliseconds = 86400000
 
 type MissingDateType = { date: Date, parent: ExchangeRate  }
 
@@ -118,7 +117,7 @@ class ExchangeRateController {
     for (let i = 1; i < arrayOfDates.length; i++) {
       const currentEntity = arrayOfDates?.[i - 1]
       const currentDate = currentEntity?.date
-      const daysDiff = ((arrayOfDates[i]?.date - currentDate) / oneDayInMilliseconds) - 1
+      const daysDiff = ((arrayOfDates[i]?.date - currentDate) / toMilliseconds('1 day')) - 1
 
       for (let j = 1; j <= daysDiff; j++) {
         const missingDate = new Date(currentDate)
