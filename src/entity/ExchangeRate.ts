@@ -23,7 +23,7 @@ export class ExchangeRate extends BaseTable {
     rate: number
 
   @Column('boolean', {
-    nullable: true
+    default: false
   })
     backfilled: boolean
 }

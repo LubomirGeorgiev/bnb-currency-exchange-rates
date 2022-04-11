@@ -18,8 +18,8 @@ export class BaseTable {
       created: Date
 
     @BeforeInsert()
-    beforeInsert() {
-      this.id = nanoid(IDLength)
+    async beforeInsert() {
+      this.id = await nanoid(IDLength)
     }
 
 }

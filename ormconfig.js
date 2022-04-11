@@ -5,7 +5,7 @@ module.exports = {
   entities: [__dirname + "/src/entity/*{.js,.ts}"],
   migrations: [__dirname + "/src/migration/*{.js,.ts}"],
   migrationsRun: true,
-  logging: false,
+  logging: true,
   cli: {
     migrationsDir: 'src/migration'
   }

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { Connection, createConnection } from 'typeorm'
 import Axios from 'axios'
 import { URL, URLSearchParams } from 'url'
@@ -11,8 +9,11 @@ import { readFile, writeFile } from 'fs/promises'
 import {
   max as maxDate,
   subDays,
+  addDays,
   isAfter as isAfterDate,
   isValid as isValiDate,
+  startOfDay,
+  endOfDay,
   format,
 } from 'date-fns'
 import cheerio from 'cheerio'
@@ -25,7 +26,7 @@ import { ExchangeRate } from 'entity/ExchangeRate'
 
 const isNumber = (num: number) => typeof num === 'number' && !isNaN(num)
 
-type MissingDateType = { date: Date, parent: ExchangeRate  }
+type MissingDateType = { date: Date, parent: ExchangeRate }
 
 class ExchangeRateController {
   numberOfRequests = 0
@@ -59,7 +60,7 @@ class ExchangeRateController {
     showChart: 'false',
     showChartButton: 'true'
   })
-  readmeFilePath = join(dirname(require.main.filename), '../README.md')
+  readmeFilePath = join(dirname(require?.main?.filename ?? ''), '../README.md')
 
   currenciesToFetch: Array<string>
   readmeFileAsText: string
@@ -83,14 +84,33 @@ class ExchangeRateController {
       isAfterDate(cursor, this.endDate);
       cursor = subDays(cursor, this.stepInDays), requestIndex++
     ) {
-      const periodEnd = requestIndex === 0 ? cursor : subDays(cursor, 1)
-      const periodStart = maxDate([
+      const periodStart = startOfDay(maxDate([
         subDays(cursor, this.stepInDays), this.endDate
-      ])
+      ]))
+      const periodEnd = endOfDay(requestIndex === 0 ? cursor : subDays(cursor, 1))
 
-      await this.iteratePeriod(periodStart, periodEnd)
+      const results = await this.ExchangeRateRepo.getByDate({
+        startDate: startOfDay(subDays(periodStart, 1)),
+        endDate: endOfDay(addDays(periodEnd, 1))
+      })
+
+      // We add padding to the start and end so we can detect the missing days
+      results.unshift(this.ExchangeRateRepo.create({
+        date: startOfDay(subDays(periodStart, 1))
+      }))
+
+      results.push(this.ExchangeRateRepo.create({
+        date: endOfDay(addDays(periodEnd, 1))
+      }))
+
+      const hasMissingDays = Boolean(this.getMissingDays(results)?.length)
+
+      if (hasMissingDays) {
+        await this.iteratePeriod(periodStart, periodEnd)
+      }
     }
 
+    // Back fill all of the missing days in the whole database
     const missingDays = this.getMissingDays(await this.ExchangeRateRepo.getByDate())
     await this.backfillDates(missingDays)
 
@@ -112,12 +132,12 @@ class ExchangeRateController {
   }
 
   getMissingDays(arrayOfDates: ExchangeRate[]): MissingDateType[] {
-    const missingDates = []
+    const missingDates: MissingDateType[] = []
 
     for (let i = 1; i < arrayOfDates.length; i++) {
       const currentEntity = arrayOfDates?.[i - 1]
       const currentDate = currentEntity?.date
-      const daysDiff = ((arrayOfDates[i]?.date - currentDate) / toMilliseconds('1 day')) - 1
+      const daysDiff = ((arrayOfDates[i]?.date?.getTime() - currentDate?.getTime()) / toMilliseconds('1 day')) - 1
 
       for (let j = 1; j <= daysDiff; j++) {
         const missingDate = new Date(currentDate)

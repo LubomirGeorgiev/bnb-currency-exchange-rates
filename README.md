@@ -8,22 +8,22 @@ This repository utilizes the [**schedule**](https://docs.github.com/en/actions/r
 
 # Available data
 
-[**SQLite Database**](https://github.com/LubomirGeorgiev/bnb-currency-exchange-rates/blob/main/data/data.db)
+[**Download SQLite Database**](https://github.com/LubomirGeorgiev/bnb-currency-exchange-rates/blob/main/data/data.db)
 
 <!-- START LINKS (DO NOT EVER FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
 
-Last Update: Mar 31, 2022, 4:25:44 AM GMT+3 _(2022-03-31T01:25:44.855Z)_
+Last Update: Apr 11, 2022, 12:40:01 AM GMT+0 _(2022-04-11T00:40:01.480Z)_
 
 | Currency (ISO Code) | Number of records |
 | :-----------------: | :---------------: |
-|         USD         |        103        |
+|         USD         |        828        |
 
 <!-- END LINKS (DO NOT EVER FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
 
 # How to configure
 
 The default configuration is available in [.env.defaults](.env.defaults).
-If you want to overwrite any of the properties in the default configuration in you create `.env` in the root directory.
+If you want to overwrite any of the properties in the default configuration in you create `.env` in the root directory and then follow the steps from the [How to use](#how-to-use) section
 
 # How to use
 

@@ -1,8 +1,13 @@
 import {
   EntityRepository,
-  Repository
+  Repository,
 } from 'typeorm'
 import { ExchangeRate } from '../entity/ExchangeRate'
+
+type GetByDateParams = {
+  startDate?: Date,
+  endDate?: Date,
+}
 
 @EntityRepository(ExchangeRate)
 export class ExchangeRateRepository extends Repository<ExchangeRate> {
@@ -27,9 +32,21 @@ export class ExchangeRateRepository extends Repository<ExchangeRate> {
       .getCount()
   }
 
-  async getByDate() {
-    return this.createQuery()
+  async getByDate({
+    startDate,
+    endDate,
+  }: GetByDateParams = {}) {
+    const query = this.createQuery()
       .orderBy(`${this.ALIAS}.date`, 'ASC')
-      .getMany()
+
+    if (startDate && endDate) {
+      // query.andWhere(`${this.ALIAS}.date BETWEEN '${startDate.toISOString()}' AND '${endDate.toISOString()}'`)
+      query.andWhere(`${this.ALIAS}.date BETWEEN :startDate AND :endDate`, {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      })
+    }
+
+    return query.getMany()
   }
 }
