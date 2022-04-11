@@ -10,7 +10,7 @@
     "build": "tsc",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "stats": "sloc ./src > stats.txt && find ./src -type f -iregex '.*\\.\\(tsx\\|ts\\)$' -printf '%s\t%p\n' | sort -nr >> stats.txt",
-    "ci": "npm run lint && npm run stats && npm run start && npm run update-readme",
+    "ci": "npm run lint && npm run stats && npm run start",
     "typeorm": "ts-node ./node_modules/typeorm/cli.js"
   },
   "author": "Lubomir Georgiev",
