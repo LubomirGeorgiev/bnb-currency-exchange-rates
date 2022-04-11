@@ -1,20 +1,23 @@
 
 ---------- Result ------------
 
-            Physical :  251
-              Source :  195
-             Comment :  4
- Single-line comment :  4
+            Physical :  256
+              Source :  199
+             Comment :  6
+ Single-line comment :  6
        Block comment :  0
-               Mixed :  2
+               Mixed :  1
  Empty block comment :  0
-               Empty :  54
+               Empty :  52
                To Do :  0
 
-Number of files read :  3
+Number of files read :  6
 
 ----------------------------
 
-5233	./src/index.ts
-2307	./src/updateReadme.ts
-65	./src/types.ts
+6670	./src/index.ts
+760	./src/utils/BaseTable.ts
+715	./src/migration/1638754240545-InitDatabase.ts
+354	./src/entity/ExchangeRate.ts
+216	./src/repository/ExchangeRate.ts
+40	./src/utils/index.ts
