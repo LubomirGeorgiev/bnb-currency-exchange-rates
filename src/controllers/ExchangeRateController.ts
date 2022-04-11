@@ -68,13 +68,13 @@ class ExchangeRateController {
   ExchangeRateRepo: ExchangeRateRepository
 
   constructor() {
-    this.setupHTTPInterceptors()
-    this.setupOnExitEvent()
+    this.#setupHTTPInterceptors()
+    this.#setupOnExitEvent()
   }
 
   async init() {
-    await this.validateParams()
-    await this.setupDBConnection()
+    await this.#validateParams()
+    await this.#setupDBConnection()
     console.log(`Current IP Address is: ${await publicIP.v4()}`)
     console.log(`User Agent: ${this.userAgent}\n`)
     await this.getReadmeFileContent()
@@ -106,18 +106,18 @@ class ExchangeRateController {
       const hasMissingDays = Boolean(this.getMissingDays(results)?.length)
 
       if (hasMissingDays) {
-        await this.iteratePeriod(periodStart, periodEnd)
+        await this.#iteratePeriod(periodStart, periodEnd)
       }
     }
 
     // Back fill all of the missing days in the whole database
     const missingDays = this.getMissingDays(await this.ExchangeRateRepo.getByDate())
-    await this.backfillDates(missingDays)
+    await this.#backfillDates(missingDays)
 
     return this
   }
 
-  async backfillDates(missingDates: MissingDateType[]) {
+  async #backfillDates(missingDates: MissingDateType[]) {
 
     for (const missingDate of missingDates) {
       const missingDateToBackfill = this.ExchangeRateRepo.create({
@@ -152,7 +152,7 @@ class ExchangeRateController {
     return missingDates
   }
 
-  async iteratePeriod(periodStart: Date, periodEnd: Date) {
+  async #iteratePeriod(periodStart: Date, periodEnd: Date) {
     console.log(`${JSON.stringify({ request: this.numberOfRequests, periodStart, periodEnd })}`)
 
     const periodQueryParams = new URLSearchParams()
@@ -190,10 +190,10 @@ class ExchangeRateController {
       }
     }
 
-    await this.updateReadmeFile()
+    await this.#updateReadmeFile()
   }
 
-  async updateReadmeFile() {
+  async #updateReadmeFile() {
     const uniqueRawIsoCodes = await this.ExchangeRateRepo.getUniqueIsoCodes()
 
     const uniqueIsoCodes = uniqueRawIsoCodes.map(entity => entity?.isoCode)
@@ -212,7 +212,7 @@ class ExchangeRateController {
     }))
   }
 
-  async validateParams() {
+  async #validateParams() {
     if (process.env.CURRENCIES_TO_FETCH) {
       this.currenciesToFetch = process.env.CURRENCIES_TO_FETCH.split(',')
 
@@ -230,7 +230,7 @@ class ExchangeRateController {
     }
   }
 
-  async setupDBConnection() {
+  async #setupDBConnection() {
     this.connection = await createConnection()
 
     this.ExchangeRateRepo = this.connection.getCustomRepository(ExchangeRateRepository)
@@ -238,7 +238,7 @@ class ExchangeRateController {
     global.typeormConnection = this.connection
   }
 
-  setupHTTPInterceptors() {
+  #setupHTTPInterceptors() {
     this.BulgarianNationalBank.interceptors.request.use(request => {
       this.numberOfRequests = this.numberOfRequests + 1
       return request
@@ -249,7 +249,7 @@ class ExchangeRateController {
     this.readmeFileAsText = await readFile(this.readmeFilePath, 'utf8')
   }
 
-  setupOnExitEvent() {
+  #setupOnExitEvent() {
     process.on('exit', () => {
       const domain = `${new URL(this.BulgarianNationalBank.defaults.baseURL || '').hostname}`
       console.log('\n')
@@ -264,13 +264,13 @@ class ExchangeRateController {
     $('select#valutes > option').toArray().map(($currencyOption) => {
       const currencyISOCode = $($currencyOption).text().trim()
 
-      if (this._isValidCurrencyCode(currencyISOCode)) {
+      if (this.#isValidCurrencyCode(currencyISOCode)) {
         this.queryParams.append('valutes', currencyISOCode)
       }
     })
   }
 
-  _isValidCurrencyCode(cur: string) {
+  #isValidCurrencyCode(cur: string) {
     return typeof cur === 'string' && cur.length === 3 && cur === cur.toUpperCase()
   }
 }
