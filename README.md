@@ -8,7 +8,7 @@ This repository utilizes the [**schedule**](https://docs.github.com/en/actions/r
 
 # Available data
 
-[**Download SQLite Database**](https://github.com/LubomirGeorgiev/bnb-currency-exchange-rates/blob/main/data/data.db)
+[**Download SQLite Database**](https://github.com/LubomirGeorgiev/bnb-currency-exchange-rates/blob/main/data/rates.db)
 
 <!-- START LINKS (DO NOT EVER FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
 
