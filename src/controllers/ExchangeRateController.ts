@@ -174,9 +174,11 @@ class ExchangeRateController {
     const $XML = cheerio.load(XMLResponse?.data, { xmlMode: true })
 
     for (const [_rowKey, $row] of $XML('ROW').toArray().reverse().entries()) {
-      const rate = parseFloat($XML($row).find('RATE').text())
+      var rate = parseFloat($XML($row).find('RATE').text())
 
       if (isNumber(rate)) {
+        const ratio = parseFloat($XML($row).find('RATIO').text())
+        rate /= ratio
         const isoCode = $XML($row).find('CODE').text().trim()
         const date = new Date(`${$XML($row).find('S2_CURR_DATE').text().trim()} 13:00`)
 
