@@ -3,6 +3,7 @@ import {
   Repository,
 } from 'typeorm'
 import { ExchangeRate } from '../entity/ExchangeRate'
+import { format } from 'date-fns'
 
 type GetByDateParams = {
   startDate?: Date,
@@ -32,7 +33,7 @@ export class ExchangeRateRepository extends Repository<ExchangeRate> {
       .getCount()
   }
 
-  async getByDate({
+  async getByDateRange({
     startDate,
     endDate,
   }: GetByDateParams = {}) {
@@ -40,7 +41,6 @@ export class ExchangeRateRepository extends Repository<ExchangeRate> {
       .orderBy(`${this.ALIAS}.date`, 'ASC')
 
     if (startDate && endDate) {
-      // query.andWhere(`${this.ALIAS}.date BETWEEN '${startDate.toISOString()}' AND '${endDate.toISOString()}'`)
       query.andWhere(`${this.ALIAS}.date BETWEEN :startDate AND :endDate`, {
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString()
@@ -48,5 +48,18 @@ export class ExchangeRateRepository extends Repository<ExchangeRate> {
     }
 
     return query.getMany()
+  }
+
+  async getByDate(date: Date) {
+    const query = this.createQuery()
+      .orderBy(`${this.ALIAS}.date`, 'ASC')
+
+    if (date) {
+      query.andWhere(`date(${this.ALIAS}.date) = :date`, {
+        date: format(date, 'yyyy-MM-dd')
+      })
+    }
+
+    return query.getOneOrFail()
   }
 }

@@ -89,7 +89,7 @@ class ExchangeRateController {
       ]))
       const periodEnd = endOfDay(requestIndex === 0 ? cursor : subDays(cursor, 1))
 
-      const results = await this.ExchangeRateRepo.getByDate({
+      const results = await this.ExchangeRateRepo.getByDateRange({
         startDate: startOfDay(subDays(periodStart, 1)),
         endDate: endOfDay(addDays(periodEnd, 1))
       })
@@ -111,7 +111,7 @@ class ExchangeRateController {
     }
 
     // Back fill all of the missing days in the whole database
-    const missingDays = this.getMissingDays(await this.ExchangeRateRepo.getByDate())
+    const missingDays = this.getMissingDays(await this.ExchangeRateRepo.getByDateRange())
     await this.#backfillDates(missingDays)
 
     return this

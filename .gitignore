@@ -122,3 +122,4 @@ yarn.lock
 !rates.db
 *.db-journal
 *.zip
+*.xlsx

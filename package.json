@@ -11,7 +11,8 @@
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "stats": "sloc ./src > stats.txt && find ./src -type f -iregex '.*\\.\\(tsx\\|ts\\)$' -printf '%s\t%p\n' | sort -nr >> stats.txt",
     "ci": "npm run lint && npm run stats && npm run start",
-    "typeorm": "ts-node ./node_modules/typeorm/cli.js"
+    "typeorm": "ts-node ./node_modules/typeorm/cli.js",
+    "gen-tax": "node --unhandled-rejections=strict -r ts-node/register src/controllers/TaxReturnGenerator.ts"
   },
   "author": "Lubomir Georgiev",
   "license": "ISC",
@@ -36,14 +37,17 @@
   "dependencies": {
     "axios": "^0.24.0",
     "cheerio": "^1.0.0-rc.10",
+    "commander": "^9.2.0",
     "date-fns": "^2.27.0",
     "dotenv-defaults": "^3.0.0",
+    "exceljs": "^4.3.0",
     "lodash": "^4.17.21",
     "ms": "^2.1.3",
     "nanoid": "^3.1.30",
     "public-ip": "^4.0.4",
     "reflect-metadata": "^0.1.13",
     "sqlite3": "^5.0.2",
-    "typeorm": "^0.2.41"
+    "typeorm": "^0.2.41",
+    "xlsx": "^0.18.5"
   }
 }
