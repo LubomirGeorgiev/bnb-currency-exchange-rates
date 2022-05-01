@@ -35,3 +35,8 @@ If you want to overwrite any of the properties in the default configuration in y
 ```
 npm run typeorm migration:generate -- -n migrationNameHere
 ```
+
+# Generate tax return from an Etoro account statement
+```
+npm run start -- gen-tax -f report.xlsx
+```

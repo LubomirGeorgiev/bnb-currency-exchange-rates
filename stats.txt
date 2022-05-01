@@ -1,25 +1,27 @@
 
 ---------- Result ------------
 
-            Physical :  437
-              Source :  353
-             Comment :  2
- Single-line comment :  2
-       Block comment :  0
+            Physical :  778
+              Source :  595
+             Comment :  26
+ Single-line comment :  6
+       Block comment :  20
                Mixed :  1
  Empty block comment :  0
-               Empty :  83
+               Empty :  158
                To Do :  0
 
-Number of files read :  8
+Number of files read :  10
 
 ----------------------------
 
-9829	./src/controllers/ExchangeRateController.ts
-1233	./src/repository/ExchangeRate.ts
+9839	./src/controllers/ExchangeRateController.ts
+8570	./src/controllers/TaxReturnGenerator.ts
+1441	./src/repository/ExchangeRate.ts
+973	./src/index.ts
 850	./src/index.test.ts
 717	./src/migration/1638754240545-InitDatabase.ts
+565	./src/utils/toNumber.ts
 446	./src/entity/ExchangeRate.ts
 379	./src/utils/BaseTable.ts
-192	./src/index.ts
-40	./src/utils/index.ts
+89	./src/utils/index.ts
