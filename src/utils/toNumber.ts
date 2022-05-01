@@ -1,6 +1,6 @@
 const checkIfValid = (value) => {
   if (typeof value !== 'string' && typeof value !== 'number') {
-    throw new Error(`value has to be typeof: 'string' but got typeof: '${typeof value}'`);
+    throw new Error(`value has to be typeof: 'string' but got typeof: '${typeof value}'`)
   }
 }
 
@@ -16,7 +16,7 @@ export const convertStringToNumber = (value) => {
 
   // check if integer
   if (float % 1 === 0) {
-    const int = parseInt(value, 10);
+    const int = parseInt(value, 10)
 
     return int
   }
