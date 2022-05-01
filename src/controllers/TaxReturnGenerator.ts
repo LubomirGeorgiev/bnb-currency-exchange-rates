@@ -156,11 +156,11 @@ class EtoroReportReader {
 
     // Add SUM formulas
     formulasRow.getCell('profit').value = {
-      formula: `=SUM(${this.getColumnRange('profit')})`, date1904: false
+      formula: `SUM(${this.getColumnRange('profit')})`, date1904: false
     }
 
     formulasRow.getCell('loss').value = {
-      formula: `=SUM(${this.getColumnRange('loss')})`, date1904: false
+      formula: `SUM(${this.getColumnRange('loss')})`, date1904: false
     }
 
     const totalsRow = sheet.addRow({})
@@ -171,7 +171,7 @@ class EtoroReportReader {
     sheet.mergeCells(`${totalsRow.getCell('profit').address}:${totalsRow.getCell('loss').address}`)
 
     totalsRow.getCell('profit').value = {
-      formula: `=${formulasRow.getCell('profit').address}-${formulasRow.getCell('loss').address}`,
+      formula: `${formulasRow.getCell('profit').address}-${formulasRow.getCell('loss').address}`,
       date1904: false
     }
 
