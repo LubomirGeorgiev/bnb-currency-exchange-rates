@@ -123,3 +123,4 @@ yarn.lock
 *.db-journal
 *.zip
 *.xlsx
+*lock*

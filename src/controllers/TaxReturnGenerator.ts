@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs'
 import Xlsx from 'xlsx'
 import { Connection, createConnection } from 'typeorm'
-import { parse as parseDate } from 'date-fns'
+import { parse as parseDate, getTime } from 'date-fns'
 import { toNumber } from '../utils'
 
 import { ExchangeRateRepository } from '../repository/ExchangeRate'
@@ -17,13 +17,18 @@ enum TaxReturnColumns {
   sellPrice = 'Продажна цена',
   buyPrice = 'Цена на придобиване',
   profit = 'Печалба',
-  loss = 'Загуба'
+  loss = 'Загуба',
+  info = 'Допълнителна информация',
 }
 
 type TableObjectType = Record<keyof typeof TaxReturnColumns, any>
 type Columns = keyof typeof TaxReturnColumns
 
 const stringToDate = (dateString: string) => parseDate(dateString, 'dd/MM/yyyy HH:mm:ss', new Date())
+
+const freezeFirstRow: Partial<ExcelJS.WorksheetView>[] = [
+  { state: 'frozen', ySplit: 1 }
+]
 
 class EtoroReportReader {
   public fileName: string
@@ -33,19 +38,15 @@ class EtoroReportReader {
   private etoroReportWorkBook: ExcelJS.Workbook
   private taxReturnWorkbook: ExcelJS.Workbook
 
-  /**
-   * The sheet name we want to extract data from
-   */
   #etoroReportSheetName = 'Closed Positions'
+  #etoroDividendColumn = 'Is Dividend'
 
-  #taxReturnSheetName = 'Печелби'
+  #taxReturnProfitSheetName = 'Печалби'
+  #taxReturnDividendSheetName = 'Дивиденти'
 
-  /**
-   * The sheet instance after we parse the file
-   */
   public etoroReportSheet: ExcelJS.Worksheet & { _rows?: ExcelJS.Row[] }
-  public taxReturnSheet: ExcelJS.Worksheet
-  public taxReturnTable: ExcelJS.Table
+  public taxReturnProfitSheet: ExcelJS.Worksheet
+  public taxReturnDividendSheet: ExcelJS.Worksheet
 
   connection: Connection
 
@@ -105,9 +106,76 @@ class EtoroReportReader {
   }
 
   getColumnRange(columnKey: Columns) {
-    const columnLetter = this.taxReturnSheet.getColumn(columnKey).letter
+    const columnLetter = this.taxReturnProfitSheet.getColumn(columnKey).letter
 
     return `${columnLetter}1:${columnLetter}${this.numberOfRows}`
+  }
+
+  async generateTaxReturn({
+    sheet,
+    ignoreDividendColumn,
+  }: { sheet: ExcelJS.Worksheet, ignoreDividendColumn: boolean }) {
+    for (const row of this.etoroReportSheet._rows!) {
+      const rowNumber = row.number
+
+      if (Boolean(row.getCell(this.#etoroDividendColumn).text.length) === ignoreDividendColumn || rowNumber === 1) {
+        continue
+      }
+
+      const units = toNumber(row.getCell('Units').text)
+      const closeRate = toNumber(row.getCell('Close Rate').text)
+      const openRate = toNumber(row.getCell('Open Rate').text)
+      const closeDate = stringToDate(row.getCell('Close Date').text)
+      const openDate = stringToDate(row.getCell('Open Date').text)
+      const action = row.getCell('Action')
+      const isin = row.getCell('ISIN').text
+      const isStock = Boolean(isin?.length)
+
+      const closeExchangeRate = (await this.ExchangeRateRepo.getByDate(closeDate)).rate
+      const openExchangeRate = (await this.ExchangeRateRepo.getByDate(openDate)).rate
+      const sellPrice = closeRate * units * closeExchangeRate
+      const buyPrice = openRate * units * openExchangeRate
+      const profit = sellPrice - buyPrice
+
+      sheet.addRow({
+        number: rowNumber,
+        code: 508,
+        closeDate: row.getCell('Close Date').text,
+        sellPrice,
+        buyPrice,
+        profit: profit >= 0 ? profit : '-',
+        loss: profit < 0 ? Math.abs(profit) : '-',
+        info: `${isStock ? `Акции (ISIN номер: ${isin}) - ` : ''}${action}`
+      } as TableObjectType)
+    }
+
+    this.numberOfRows = sheet.rowCount
+
+    const formulasRow = sheet.addRow({})
+    this.addStyles(formulasRow)
+
+    // Add SUM formulas
+    formulasRow.getCell('profit').value = {
+      formula: `=SUM(${this.getColumnRange('profit')})`, date1904: false
+    }
+
+    formulasRow.getCell('loss').value = {
+      formula: `=SUM(${this.getColumnRange('loss')})`, date1904: false
+    }
+
+    const totalsRow = sheet.addRow({})
+    this.addStyles(totalsRow)
+
+    totalsRow.getCell('buyPrice').value = 'Облагаем доход (ПЕЧАЛБА - ЗАГУБА)'
+
+    sheet.mergeCells(`${totalsRow.getCell('profit').address}:${totalsRow.getCell('loss').address}`)
+
+    totalsRow.getCell('profit').value = {
+      formula: `=${formulasRow.getCell('profit').address}-${formulasRow.getCell('loss').address}`,
+      date1904: false
+    }
+
+    this.fixCellWidth(sheet)
   }
 
   addStyles(cellOrRow: ExcelJS.Row | ExcelJS.Column | ExcelJS.Cell) {
@@ -127,20 +195,24 @@ class EtoroReportReader {
     cellOrRow.font = { bold: true }
   }
 
+  createTaxReturnTable() {
+    this.taxReturnWorkbook = new ExcelJS.Workbook()
+    this.taxReturnProfitSheet = this.taxReturnWorkbook.addWorksheet(this.#taxReturnProfitSheetName, {
+      views: freezeFirstRow
+    })
+    this.taxReturnProfitSheet.columns = this.#enumToColumns(TaxReturnColumns)
+
+    this.taxReturnDividendSheet = this.taxReturnWorkbook.addWorksheet(this.#taxReturnDividendSheetName, {
+      views: freezeFirstRow
+    })
+    this.taxReturnDividendSheet.columns = this.#enumToColumns(TaxReturnColumns)
+  }
+
   async parse({ fileName }: Pick<EtoroReportReaderConstructorArgs, 'fileName'> = {}) {
     await this.setupDBConnection()
 
-    // console.log('--getbydate', await this.ExchangeRateRepo.getByDate())
-
     const file = fileName || this.fileName
     const etoroReport = new ExcelJS.Workbook()
-    this.taxReturnWorkbook = new ExcelJS.Workbook()
-    this.taxReturnSheet = this.taxReturnWorkbook.addWorksheet(this.#taxReturnSheetName)
-    this.taxReturnSheet.columns = this.#enumToColumns(TaxReturnColumns)
-    // Freeze first row
-    this.taxReturnSheet.views = [
-      { state: 'frozen', ySplit: 1 }
-    ]
 
     // FIXME If this kind of seems weird please have a look at https://github.com/exceljs/exceljs/issues/962
     // When they resolve the issue we should get rid of this
@@ -153,66 +225,18 @@ class EtoroReportReader {
     this.etoroReportSheet = this.etoroReportWorkBook.getWorksheet(this.#etoroReportSheetName)
     this.#attachKeyToEachCell()
 
-    for (const row of this.etoroReportSheet._rows!) {
-      const rowNumber = row.number
+    this.createTaxReturnTable()
+    await this.generateTaxReturn({
+      sheet: this.taxReturnProfitSheet,
+      ignoreDividendColumn: true,
+    })
 
-      // Skip the columns
-      if (rowNumber === 1) {
-        continue
-      }
+    await this.generateTaxReturn({
+      sheet: this.taxReturnDividendSheet,
+      ignoreDividendColumn: false,
+    })
 
-      const units = toNumber(row.getCell('Units').text)
-      const closeRate = toNumber(row.getCell('Close Rate').text)
-      const openRate = toNumber(row.getCell('Open Rate').text)
-      const closeDate = stringToDate(row.getCell('Close Date').text)
-      const openDate = stringToDate(row.getCell('Open Date').text)
-
-      const closeExchangeRate = (await this.ExchangeRateRepo.getByDate(closeDate)).rate
-      const openExchangeRate = (await this.ExchangeRateRepo.getByDate(openDate)).rate
-      const sellPrice = closeRate * units * closeExchangeRate
-      const buyPrice = openRate * units * openExchangeRate
-      const profit = sellPrice - buyPrice
-
-      this.taxReturnSheet.addRow({
-        number: rowNumber,
-        code: 508,
-        closeDate: row.getCell('Close Date').text,
-        sellPrice,
-        buyPrice,
-        profit: profit >= 0 ? profit : '-',
-        loss: profit < 0 ? Math.abs(profit) : '-'
-      } as TableObjectType)
-    }
-
-    this.numberOfRows = this.taxReturnSheet.rowCount
-
-    const formulasRow = this.taxReturnSheet.addRow({})
-    this.addStyles(formulasRow)
-
-    // Add SUM formulas
-    formulasRow.getCell('profit').value = {
-      formula: `=SUM(${this.getColumnRange('profit')})`, date1904: false
-    }
-
-    formulasRow.getCell('loss').value = {
-      formula: `=SUM(${this.getColumnRange('loss')})`, date1904: false
-    }
-
-    const totalsRow = this.taxReturnSheet.addRow({})
-    this.addStyles(totalsRow)
-
-    totalsRow.getCell('buyPrice').value = 'Облагаем доход [ПЕЧАЛБА - ЗАГУБА]'
-
-    this.taxReturnSheet.mergeCells(`${totalsRow.getCell('profit').address}:${totalsRow.getCell('loss').address}`)
-
-    totalsRow.getCell('profit').value = {
-      formula: `=${formulasRow.getCell('profit').address}-${formulasRow.getCell('loss').address}`,
-      date1904: false
-    }
-
-    this.fixCellWidth(this.taxReturnSheet)
-
-    await this.taxReturnWorkbook.xlsx.writeFile('generated.xlsx')
+    await this.taxReturnWorkbook.xlsx.writeFile(`generated/generated-tax-return-${getTime(new Date())}.xlsx`)
   }
 
   /**
