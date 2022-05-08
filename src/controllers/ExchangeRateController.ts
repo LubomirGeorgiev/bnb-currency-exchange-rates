@@ -178,7 +178,7 @@ class ExchangeRateController {
 
       if (isNumber(rate)) {
         const ratio = parseFloat($XML($row).find('RATIO').text())
-        rate /= ratio
+        rate = rate / ratio
 
         const isoCode = $XML($row).find('CODE').text().trim()
         const date = new Date(`${$XML($row).find('S2_CURR_DATE').text().trim()} 13:00`)
