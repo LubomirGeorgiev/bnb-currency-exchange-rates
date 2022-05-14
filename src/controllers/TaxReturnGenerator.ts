@@ -21,7 +21,7 @@ enum TaxReturnColumns {
   info = 'Допълнителна информация',
 }
 
-type TableObjectType = Record<keyof typeof TaxReturnColumns, any>
+type TableObjectType = Record<keyof typeof TaxReturnColumns, string | number>
 type Columns = keyof typeof TaxReturnColumns
 
 const stringToDate = (dateString: string) => parseDate(dateString, 'dd/MM/yyyy HH:mm:ss', new Date())
