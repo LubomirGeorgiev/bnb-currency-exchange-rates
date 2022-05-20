@@ -16,7 +16,7 @@ Number of files read :  10
 ----------------------------
 
 9932	./src/controllers/ExchangeRateController.ts
-8582	./src/controllers/TaxReturnGenerator.ts
+8586	./src/controllers/TaxReturnGenerator.ts
 1441	./src/repository/ExchangeRate.ts
 973	./src/index.ts
 850	./src/index.test.ts
