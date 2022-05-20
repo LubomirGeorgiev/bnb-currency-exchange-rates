@@ -138,7 +138,7 @@ class EtoroReportReader {
       const profit = sellPrice - buyPrice
 
       sheet.addRow({
-        number: rowNumber,
+        number: rowNumber - 1,
         code: 508,
         closeDate: row.getCell('Close Date').text,
         sellPrice,
