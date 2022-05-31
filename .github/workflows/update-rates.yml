@@ -3,7 +3,7 @@ name: "Update Currency Exchange Rates"
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 17 * * 1-5"
+    - cron: "0 16 * * 1-5"
 
 jobs:
   update:
