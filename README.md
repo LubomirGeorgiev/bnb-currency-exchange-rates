@@ -12,11 +12,11 @@ This repository utilizes the [**schedule**](https://docs.github.com/en/actions/r
 
 <!-- START LINKS (DO NOT EVER FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
 
-Last Update: Sep 1, 2025, 4:07:34 PM GMT+0 _(2025-09-01T16:07:34.154Z)_
+Last Update: Sep 8, 2025, 4:07:06 PM GMT+0 _(2025-09-08T16:07:06.293Z)_
 
 | Currency (ISO Code) | Number of records |
 | :-----------------: | :---------------: |
-|         USD         |       2068        |
+|         USD         |       2074        |
 
 <!-- END LINKS (DO NOT EVER FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
 
