@@ -12,7 +12,7 @@ This repository utilizes the [**schedule**](https://docs.github.com/en/actions/r
 
 <!-- START LINKS (DO NOT EVER FU*ING DELETE THIS COMMENT FOR THE LOVE OF YOUR LIFE!!! IF YOU ARE CURIOS HOW IT WORKS, YOU CAN HAVE A LOOK AT ./src/updateReadme.ts) -->
 
-Last Update: Mar 30, 2026, 4:27:26 PM GMT+0 _(2026-03-30T16:27:26.260Z)_
+Last Update: Apr 6, 2026, 4:21:03 PM GMT+0 _(2026-04-06T16:21:03.100Z)_
 
 | Currency (ISO Code) | Number of records |
 | :-----------------: | :---------------: |
